@@ -2162,7 +2162,7 @@
   }
 
   // Build + send the SPL SHIFT transfer using the connected wallet provider.
-  // Uses Solana web3 from CDN if available; otherwise instructs the user.
+  // Uses only @solana/web3.js — no spl-token CDN needed (it has no browser bundle).
   function paySHIFT(quote){
     return new Promise(function(resolve, reject){
       var prov = (window.phantom && window.phantom.solana) || window.solana || window.solflare || window.backpack;
@@ -2170,12 +2170,17 @@
         reject(new Error('A Solana wallet that supports signing is required.'));
         return;
       }
-      if(!window.solanaWeb3 || !window.splToken){
-        reject(new Error('Solana libraries not loaded. Please refresh the page and try again.'));
+      if(!window.solanaWeb3){
+        reject(new Error('Solana Web3 library not loaded. Please refresh the page and try again.'));
         return;
       }
       var Web3 = window.solanaWeb3;
-      var SPL = window.splToken;
+
+      // Well-known Solana program IDs
+      var TOKEN_PROGRAM_ID = new Web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+      var ASSOCIATED_TOKEN_PROGRAM_ID = new Web3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+      var SYSTEM_PROGRAM_ID = Web3.SystemProgram.programId;
+
       var conn = new Web3.Connection(quote.rpcUrl || 'https://solana-mainnet.g.alchemy.com/v2/XBb97ilIIU9AMXbKKyVxf', 'confirmed');
       var mintPubkey = new Web3.PublicKey(quote.tokenMint);
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
@@ -2183,40 +2188,67 @@
       var decimals = quote.decimals || 9;
       var amount = Math.round(quote.feeShift * Math.pow(10, decimals));
 
-      // Get or create associated token accounts
-      Promise.all([
-        SPL.getAssociatedTokenAddress(mintPubkey, walletPubkey),
-        SPL.getAssociatedTokenAddress(mintPubkey, treasuryPubkey)
-      ]).then(function(atas){
-        var fromATA = atas[0];
-        var toATA = atas[1];
+      // Derive Associated Token Address (same algorithm as spl-token SDK)
+      function getATA(owner, mint){
+        return Web3.PublicKey.findProgramAddressSync(
+          [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        )[0];
+      }
 
-        // Build the transfer instruction
-        var transferIx = SPL.createTransferInstruction(
-          fromATA,
-          toATA,
-          walletPubkey,
-          amount
-        );
+      // Build a raw SPL Token Transfer instruction (instruction index 3)
+      function createTransferIx(source, dest, authority, amt){
+        var data = new Uint8Array(9);
+        data[0] = 3; // Transfer instruction index
+        // Write amount as little-endian u64
+        var lo = amt & 0xFFFFFFFF;
+        var hi = Math.floor(amt / 0x100000000) & 0xFFFFFFFF;
+        data[1] = lo & 0xFF; data[2] = (lo >> 8) & 0xFF;
+        data[3] = (lo >> 16) & 0xFF; data[4] = (lo >> 24) & 0xFF;
+        data[5] = hi & 0xFF; data[6] = (hi >> 8) & 0xFF;
+        data[7] = (hi >> 16) & 0xFF; data[8] = (hi >> 24) & 0xFF;
+        return new Web3.TransactionInstruction({
+          keys: [
+            { pubkey: source,    isSigner: false, isWritable: true },
+            { pubkey: dest,      isSigner: false, isWritable: true },
+            { pubkey: authority,  isSigner: true,  isWritable: false }
+          ],
+          programId: TOKEN_PROGRAM_ID,
+          data: data
+        });
+      }
 
-        // Check if treasury ATA exists; if not, create it
-        return conn.getAccountInfo(toATA).then(function(acctInfo){
-          var tx = new Web3.Transaction();
-          if(!acctInfo){
-            // Create the treasury's associated token account
-            tx.add(SPL.createAssociatedTokenAccountInstruction(
-              walletPubkey,
-              toATA,
-              treasuryPubkey,
-              mintPubkey
-            ));
-          }
-          tx.add(transferIx);
-          return conn.getLatestBlockhash('confirmed').then(function(bh){
-            tx.recentBlockhash = bh.blockhash;
-            tx.feePayer = walletPubkey;
-            return prov.signAndSendTransaction(tx);
-          });
+      // Build a CreateAssociatedTokenAccount instruction
+      function createATAIx(payer, ata, owner, mint){
+        return new Web3.TransactionInstruction({
+          keys: [
+            { pubkey: payer,                    isSigner: true,  isWritable: true },
+            { pubkey: ata,                      isSigner: false, isWritable: true },
+            { pubkey: owner,                    isSigner: false, isWritable: false },
+            { pubkey: mint,                     isSigner: false, isWritable: false },
+            { pubkey: SYSTEM_PROGRAM_ID,        isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID,         isSigner: false, isWritable: false }
+          ],
+          programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+          data: new Uint8Array(0)
+        });
+      }
+
+      var fromATA = getATA(walletPubkey, mintPubkey);
+      var toATA = getATA(treasuryPubkey, mintPubkey);
+      var transferIx = createTransferIx(fromATA, toATA, walletPubkey, amount);
+
+      // Check if treasury ATA exists; if not, create it
+      conn.getAccountInfo(toATA).then(function(acctInfo){
+        var tx = new Web3.Transaction();
+        if(!acctInfo){
+          tx.add(createATAIx(walletPubkey, toATA, treasuryPubkey, mintPubkey));
+        }
+        tx.add(transferIx);
+        return conn.getLatestBlockhash('confirmed').then(function(bh){
+          tx.recentBlockhash = bh.blockhash;
+          tx.feePayer = walletPubkey;
+          return prov.signAndSendTransaction(tx);
         });
       }).then(function(result){
         var sig = result.signature || result;
@@ -2289,11 +2321,7 @@
   checkReady();
 })();
 </script>
-<!-- Solana Web3 + SPL Token for SHIFT payment transfers -->
+<!-- Solana Web3 for SHIFT payment transfers (SPL instructions built manually — no spl-token CDN needed) -->
 <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
-<script type="module">
-  import * as splToken from 'https://cdn.jsdelivr.net/npm/@solana/spl-token@0.4.9/+esm';
-  window.splToken = splToken;
-</script>
 </body>
 </html>
