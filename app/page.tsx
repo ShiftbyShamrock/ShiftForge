@@ -9,7 +9,7 @@ import { join } from 'path';
 export default function ForgePage() {
   // Read the Forge HTML at build time
   const forgeHtml = readFileSync(
-    join(process.cwd(), 'shift-forge-v5.html'),
+    join(process.cwd(), 'shift-forge-v20.html'),
     'utf-8'
   );
 
