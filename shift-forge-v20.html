@@ -506,7 +506,7 @@
   //   ''            → same-origin (frontend + backend hosted together, recommended)
   //   'https://...' → cross-origin backend URL (e.g. 'https://forge.yourdomain.com')
   //   null          → no backend: sandbox mode (Claude artifact preview / local fallback)
-  var BACKEND_URL = null;
+  var BACKEND_URL = '';
   function api(path){ return (BACKEND_URL === '' ? '' : BACKEND_URL) + path; }
   function hasBackend(){ return BACKEND_URL !== null && BACKEND_URL !== undefined; }
 
@@ -2171,14 +2171,65 @@
         return;
       }
       if(!window.solanaWeb3 || !window.splToken){
-        reject(new Error('Solana libraries not loaded. On the hosted site these load from CDN to build the SHIFT transfer.'));
+        reject(new Error('Solana libraries not loaded. Please refresh the page and try again.'));
         return;
       }
-      // The actual transfer construction (associated token accounts, transfer instruction)
-      // runs on the hosted site where solanaWeb3 + splToken are present. Contract:
-      //   from: wallet.address ATA(SHIFT)  →  to: quote.treasury ATA(SHIFT)
-      //   amount: quote.feeShift * 10^quote.decimals
-      reject(new Error('SHIFT transfer builder runs on the deployed site (needs Solana web3 + SPL token from CDN).'));
+      var Web3 = window.solanaWeb3;
+      var SPL = window.splToken;
+      var conn = new Web3.Connection(quote.rpcUrl || 'https://solana-mainnet.g.alchemy.com/v2/XBb97ilIIU9AMXbKKyVxf', 'confirmed');
+      var mintPubkey = new Web3.PublicKey(quote.tokenMint);
+      var treasuryPubkey = new Web3.PublicKey(quote.treasury);
+      var walletPubkey = new Web3.PublicKey(wallet.address);
+      var decimals = quote.decimals || 9;
+      var amount = Math.round(quote.feeShift * Math.pow(10, decimals));
+
+      // Get or create associated token accounts
+      Promise.all([
+        SPL.getAssociatedTokenAddress(mintPubkey, walletPubkey),
+        SPL.getAssociatedTokenAddress(mintPubkey, treasuryPubkey)
+      ]).then(function(atas){
+        var fromATA = atas[0];
+        var toATA = atas[1];
+
+        // Build the transfer instruction
+        var transferIx = SPL.createTransferInstruction(
+          fromATA,
+          toATA,
+          walletPubkey,
+          amount
+        );
+
+        // Check if treasury ATA exists; if not, create it
+        return conn.getAccountInfo(toATA).then(function(acctInfo){
+          var tx = new Web3.Transaction();
+          if(!acctInfo){
+            // Create the treasury's associated token account
+            tx.add(SPL.createAssociatedTokenAccountInstruction(
+              walletPubkey,
+              toATA,
+              treasuryPubkey,
+              mintPubkey
+            ));
+          }
+          tx.add(transferIx);
+          return conn.getLatestBlockhash('confirmed').then(function(bh){
+            tx.recentBlockhash = bh.blockhash;
+            tx.feePayer = walletPubkey;
+            return prov.signAndSendTransaction(tx);
+          });
+        });
+      }).then(function(result){
+        var sig = result.signature || result;
+        // Wait for confirmation
+        conn.confirmTransaction(sig, 'confirmed').then(function(){
+          resolve(sig);
+        }).catch(function(){
+          // Even if confirm times out, the signature was submitted
+          resolve(sig);
+        });
+      }).catch(function(err){
+        reject(new Error('SHIFT payment failed: ' + (err.message || err)));
+      });
     });
   }
 
@@ -2238,5 +2289,8 @@
   checkReady();
 })();
 </script>
+<!-- Solana Web3 + SPL Token for SHIFT payment transfers -->
+<script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@solana/spl-token@0.4.9/lib/cjs/index.js"></script>
 </body>
 </html>
