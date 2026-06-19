@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHIFT — The Forge</title>
+<style>
+  :root {
+    --bg: #100d1a; --surface: #1a1626; --surface2: #241e35; --border: #3a3155;
+    --text: #ece8f8; --text-dim: #9b93b8; --accent: #8b7ff0; --accent-deep: #5d4fd6; --gold: #ffd27a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 28px 20px 60px; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 30px; font-weight: 700; letter-spacing: 0.18em; color: var(--accent); }
+  header p { font-size: 13px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.04em; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+  .panel h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; }
+  .panel h2 small { font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+
+  .aff-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 7px; }
+  .aff-chip { border-radius: 9px; padding: 8px 4px; text-align: center; border: 1px solid; font-size: 11px; }
+  .aff-chip .ic { font-size: 19px; display: block; margin-bottom: 2px; }
+  .aff-chip .nm { font-weight: 600; display: block; }
+  .aff-chip .pl { font-size: 9.5px; opacity: 0.8; display: block; }
+
+  .tmpl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+  .tmpl { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface2); font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .tmpl b { color: var(--text); font-size: 13px; }
+
+  .frame-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+  .frame-demo { border-radius: 10px; padding: 10px 12px; font-size: 12px; text-align: center; font-weight: 600; border: 3px solid; background: var(--surface2); }
+
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: pointer; background: var(--surface2); position: relative; overflow: hidden; }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
+  .upload-zone.has-image { padding: 0; border-style: solid; }
+  .upload-zone img { width: 100%; max-height: 260px; object-fit: contain; display: block; background: #000; }
+  .uz-title { font-size: 15px; font-weight: 600; }
+  .uz-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .uz-change { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; padding: 5px 12px; border-radius: 8px; display: none; }
+  .upload-zone.has-image:hover .uz-change { display: block; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .fg { display: flex; flex-direction: column; gap: 5px; }
+  .fg.full { grid-column: 1 / -1; }
+  .fg label { font-size: 12px; color: var(--text-dim); }
+  .fg input, .fg textarea, .fg select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px; color: var(--text); font-family: inherit; width: 100%; }
+  .fg input:focus, .fg textarea:focus, .fg select:focus { outline: none; border-color: var(--accent); }
+  .fg textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
+  .fg .note { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+
+  .coll-badge { display: none; margin-top: 10px; font-size: 12.5px; padding: 9px 12px; border-radius: 8px; background: rgba(151,196,89,0.12); border: 1px solid #3B6D11; color: #C0DD97; line-height: 1.6; }
+  .coll-badge.show { display: block; }
+
+  .wallet-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .wallet-btn { padding: 10px 16px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit; }
+  .wallet-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .wallet-status { font-size: 12.5px; color: var(--text-dim); }
+  .wallet-status.ok { color: #2fbd8d; }
+
+  .trait-row { display: grid; grid-template-columns: 1fr 1fr 38px; gap: 8px; margin-bottom: 8px; }
+  .trait-row input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; font-size: 13px; color: var(--text); font-family: inherit; width: 100%; }
+  .trait-row input:focus { outline: none; border-color: var(--accent); }
+  .btn-x { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-dim); cursor: pointer; font-size: 15px; }
+  .btn-x:hover { border-color: #d66; color: #d66; }
+  .btn-add { width: 100%; background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 8px; font-size: 13px; cursor: pointer; color: var(--text-dim); font-family: inherit; }
+  .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+  .reg-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  @media (max-width: 640px) { .reg-grid { grid-template-columns: 1fr; } }
+  .reg-btn { margin-top: 10px; padding: 9px 14px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit; }
+  .reg-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .reg-list { margin-top: 10px; font-size: 12px; color: var(--text-dim); line-height: 1.8; }
+  .reg-list b { color: var(--text); }
+
+  .gen-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--accent-deep), var(--accent)); color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: 0.03em; }
+  .gen-btn:hover { opacity: 0.92; }
+  .gen-btn:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; }
+  .req-hint { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 8px; }
+
+  .status { font-size: 13px; text-align: center; padding: 12px; color: var(--text-dim); display: none; white-space: pre-line; line-height: 1.6; }
+  .status.show { display: block; }
+  .status.error { color: #f08080; }
+  .status.warn { color: var(--gold); }
+  .pulse { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .output { display: none; gap: 24px; flex-wrap: wrap; align-items: flex-start; margin-top: 8px; }
+  .output.show { display: flex; }
+  .card-col { flex-shrink: 0; width: 340px; }
+  #cardCanvas { width: 340px; height: auto; border-radius: 18px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); display: block; }
+
+  .evo-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  .evo-panel h3 { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+  .evo-ctrl { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .evo-btn { width: 38px; height: 38px; border-radius: 9px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 18px; cursor: pointer; }
+  .evo-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .evo-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .evo-lv { flex: 1; text-align: center; }
+  .evo-lv .n { font-size: 24px; font-weight: 700; }
+  .evo-lv .t { font-size: 11px; color: var(--text-dim); }
+  .evo-lv.asc .n { color: var(--gold); }
+  .evo-miles { font-size: 11.5px; line-height: 1.8; color: var(--text-dim); }
+  .evo-miles .got { color: var(--text); }
+  .evo-miles .got::before { content: '✓ '; color: #2fbd8d; }
+  .evo-miles .not::before { content: '○ '; }
+
+  .dl-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .dl-btn { flex: 1; min-width: 140px; padding: 10px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit; }
+  .dl-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .details { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+  .dblock { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .dblock h3 { font-size: 10.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+  .id-row { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .id-it { font-size: 13px; color: var(--text-dim); }
+  .id-it b { color: var(--text); font-weight: 600; }
+  .sf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .sf-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: center; }
+  .sf-val { font-size: 24px; font-weight: 700; }
+  .sf-lbl { font-size: 10.5px; color: var(--text-dim); margin-top: 2px; }
+  .sf-bd { font-size: 10.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.6; }
+  .btag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 5px; margin: 1px; border: 1px solid; }
+  .ab-it { border-left: 3px solid var(--accent); padding-left: 11px; margin-bottom: 10px; }
+  .ab-it:last-child { margin-bottom: 0; }
+  .ab-it.locked { opacity: 0.45; }
+  .ab-tp { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+  .ab-nm { font-size: 14px; font-weight: 600; }
+  .ab-ds { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+  .vt-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vt { font-size: 11.5px; padding: 4px 10px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+  .forge-hit { font-size: 12px; line-height: 1.9; color: var(--text-dim); }
+  .forge-hit b { color: var(--text); }
+  .lore-block { font-style: italic; font-size: 14px; line-height: 1.7; color: var(--text); border-left: 3px solid var(--gold); padding-left: 12px; }
+  .code-block { font-family: Consolas, monospace; font-size: 11.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-dim); white-space: pre; overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>S H I F T &nbsp;·&nbsp; T H E &nbsp; F O R G E</h1>
+    <p>NFT → Playable Card · Enhanced Artwork · Lore Entry</p>
+  </header>
+
+  <div class="panel">
+    <h2>Card templates — NFTs can become any of these</h2>
+    <div class="tmpl-grid">
+      <div class="tmpl"><b>🛡 Hero</b><br>PFP NFTs — dogs, apes, humans, wizards</div>
+      <div class="tmpl"><b>👹 Monster</b><br>Creatures — dragons, beasts, demons</div>
+      <div class="tmpl"><b>🗝 Artifact</b><br>Objects — crowns, weapons, relics</div>
+      <div class="tmpl"><b>✨ SHIFT Spell</b><br>Abstract art — portals, cosmic swirls, magic effects</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Affinities &amp; ability pools — every card draws from its affinity's pool</h2>
+    <div class="aff-grid" id="affGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Official card frames</h2>
+    <div class="frame-grid">
+      <div class="frame-demo" style="border-color:#b07845;color:#d8a06a">Common · Bronze</div>
+      <div class="frame-demo" style="border-color:#b8bec8;color:#dde3ec">Uncommon · Silver</div>
+      <div class="frame-demo" style="border-color:#e0b341;color:#ffe28a">Rare · Gold</div>
+      <div class="frame-demo" style="border-color:#9b8cff;color:#c4baff">Epic · Purple</div>
+      <div class="frame-demo" style="border-image:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#b66dff) 1;color:#fff">Legendary · Rainbow Foil</div>
+      <div class="frame-demo" style="border-color:#ff6b9d;color:#ffb3d0">Mythic · Animated Cosmic ✦</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Step 1 — Wallet &amp; ownership <small>— a card may only be forged from an NFT you own</small></h2>
+    <div class="wallet-row" id="walletRow">
+      <button class="wallet-btn" data-wallet="phantom">👻 Phantom</button>
+      <button class="wallet-btn" data-wallet="metamask">🦊 MetaMask</button>
+      <button class="wallet-btn" data-wallet="solflare">🔆 Solflare</button>
+      <button class="wallet-btn" data-wallet="backpack">🎒 Backpack</button>
+      <button class="wallet-btn" data-wallet="seeker">📱 Seeker / Mobile</button>
+      <button class="wallet-btn" data-wallet="manual">⌨ Enter address</button>
+    </div>
+    <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — cards will be stamped UNVERIFIED</div>
+    <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
+      <label>Wallet address (manual)</label>
+      <input type="text" id="manualWallet" placeholder="Paste your Solana or Ethereum address">
+      <div class="note">Manual entry binds the card to this address but cannot prove you control it — your backend must verify ownership on-chain (or via a signed message) before official minting.</div>
+    </div>
+    <div class="fg" style="margin-top:10px">
+      <label>NFT identifier (mint address / contract:tokenId)</label>
+      <input type="text" id="nftId" placeholder="e.g. 7xKX...9fGx or 0xabc...:4521">
+      <div class="note"><b>Heads up:</b> browser wallet extensions cannot inject into this sandboxed preview. To connect Phantom / MetaMask / Solflare / Backpack directly, download this file and open it in your own browser. Seeker and other mobile wallets connect via the Solana Mobile Wallet Adapter when this page is served from a real domain. Manual entry works everywhere. In production, your backend verifies on-chain that the connected wallet owns this NFT before forging.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Step 2 — NFT artwork</h2>
+    <div class="upload-zone" id="uploadZone">
+      <div class="uz-title">Click or drop your NFT image here</div>
+      <div class="uz-sub">PNG · JPG · GIF · WebP</div>
+      <div class="uz-change">Change image</div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+  </div>
+
+  <div class="panel">
+    <h2>Step 3 — NFT metadata</h2>
+    <div class="grid2">
+      <div class="fg"><label>Token name *</label><input type="text" id="tokenName" placeholder="e.g. Fuddy Dog Alpha #042"></div>
+      <div class="fg"><label>Collection</label><input type="text" id="collection" placeholder="e.g. Fuddy Dogs"></div>
+      <div class="fg">
+        <label>Card template</label>
+        <select id="cardType">
+          <option value="auto">Auto-detect from artwork</option>
+          <option value="Hero">🛡 Hero</option>
+          <option value="Monster">👹 Monster</option>
+          <option value="Artifact">🗝 Artifact</option>
+          <option value="SHIFT Spell">✨ SHIFT Spell</option>
+        </select>
+      </div>
+      <div class="fg"><label>Description / lore hint (optional)</label><input type="text" id="description" placeholder="Backstory, vibe, origin..."></div>
+    </div>
+    <div class="coll-badge" id="collBadge"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Trait attributes <small>— Weapon, Armor, Shield, Magic Aura, Pet Companion, Vehicle, Heavy Body &amp; Guardian Trait trigger stat bonuses</small></h2>
+    <div id="traitsList"></div>
+    <button class="btn-add" id="addTraitBtn">+ Add trait</button>
+  </div>
+
+  <div class="panel">
+    <h2>Step 4 — Collection recognition <small>— register partner collections; recognized NFTs auto-lock class &amp; affinity</small></h2>
+    <div class="reg-grid">
+      <div class="fg"><label>Collection name</label><input type="text" id="regName" placeholder="e.g. Mad Lads"></div>
+      <div class="fg"><label>Locked class</label><select id="regClass"></select></div>
+      <div class="fg"><label>Locked affinity</label><select id="regAff"></select></div>
+    </div>
+    <button class="reg-btn" id="regBtn">+ Register collection</button>
+    <div class="reg-list" id="regList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>AI image generation <small>— optional: enhanced SHIFT fantasy artwork (original preserved)</small></h2>
+    <div class="grid2">
+      <div class="fg">
+        <label>Provider</label>
+        <select id="imgProvider">
+          <option value="none">None — use original NFT art (styled)</option>
+          <option value="dalle">OpenAI DALL·E 3</option>
+          <option value="stability">Stability AI — Stable Diffusion</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Your API key</label>
+        <input type="password" id="imgApiKey" placeholder="sk-..." autocomplete="off">
+        <div class="note">Kept in memory only.</div>
+      </div>
+      <div class="fg full"><label>Art style direction (optional)</label><input type="text" id="imgStyle" placeholder="e.g. dark fantasy oil painting, dramatic lighting"></div>
+    </div>
+  </div>
+
+  <button class="gen-btn" id="genBtn" disabled>⚒ Forge SHIFT Card</button>
+  <div class="req-hint" id="reqHint">Upload an NFT image and enter a token name to enable</div>
+
+  <div class="status" id="status"></div>
+
+  <div class="output" id="output">
+    <div class="card-col">
+      <canvas id="cardCanvas" width="680" height="1000"></canvas>
+      <div class="evo-panel">
+        <h3>NFT evolution system</h3>
+        <div class="evo-ctrl">
+          <button class="evo-btn" id="evoDown" aria-label="Level down">−</button>
+          <div class="evo-lv" id="evoLv"><div class="n">1</div><div class="t">Base card</div></div>
+          <button class="evo-btn" id="evoUp" aria-label="Level up">+</button>
+        </div>
+        <div class="evo-miles" id="evoMiles"></div>
+      </div>
+      <div class="dl-row">
+        <button class="dl-btn" id="dlPngBtn">⬇ Download card PNG</button>
+        <button class="dl-btn" id="dlJsonBtn">⬇ Export JSON</button>
+      </div>
+    </div>
+    <div class="details" id="details"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ═══════════ AFFINITIES ═══════════
+  var AFFINITIES = {
+    Fortune: { icon:'🍀', theme:'Luck, Wealth, Clover', playstyle:'Draw & XP',    dark:'#1d3a08', mid:'#3B6D11', light:'#97C459', pale:'#C0DD97' },
+    Shadow:  { icon:'🌑', theme:'Darkness, Stealth',    playstyle:'Debuffs',      dark:'#171238', mid:'#3C3489', light:'#8b7ff0', pale:'#CECBF6' },
+    Nature:  { icon:'🌿', theme:'Plants, Beasts',       playstyle:'Healing',      dark:'#04241e', mid:'#0F6E56', light:'#5DCAA5', pale:'#9FE1CB' },
+    Flame:   { icon:'🔥', theme:'Fire, Rage',           playstyle:'Damage',       dark:'#2e0f04', mid:'#993C1D', light:'#F0997B', pale:'#F5C4B3' },
+    Frost:   { icon:'❄️', theme:'Ice, Control',         playstyle:'Freeze',       dark:'#031e38', mid:'#185FA5', light:'#85B7EB', pale:'#B5D4F4' },
+    Storm:   { icon:'⚡', theme:'Wind, Lightning',      playstyle:'Speed',        dark:'#2b1801', mid:'#854F0B', light:'#EF9F27', pale:'#FAC775' },
+    Arcane:  { icon:'🔮', theme:'Magic, Knowledge',     playstyle:'Spellcasting', dark:'#310d1a', mid:'#993556', light:'#ED93B1', pale:'#F4C0D1' },
+    Rift:    { icon:'🌌', theme:'Cosmic, Time',         playstyle:'Manipulation', dark:'#0d0a20', mid:'#26215C', light:'#AFA9EC', pale:'#CECBF6' },
+    Divine:  { icon:'✨', theme:'Angels, Light',        playstyle:'Protection',   dark:'#2b1c01', mid:'#a8780f', light:'#FAC775', pale:'#FAEEDA' },
+    Machine: { icon:'⚙️', theme:'Robots, Tech',         playstyle:'Artifacts',    dark:'#1c1c1a', mid:'#5F5E5A', light:'#B4B2A9', pale:'#D3D1C7' }
+  };
+
+  // ═══════════ AFFINITY ABILITY POOLS ═══════════
+  // Each affinity has its own pool. Cards draw abilities ONLY from their affinity's pool.
+  var POOLS = {
+    Fortune: {
+      passive: [ ['Lucky Hand','Your first draw each turn yields an extra card on a lucky roll.'], ['Fortune Favors','25% chance to ignore incoming damage.'], ["Clover's Gift",'Gain +1 XP from every victory.'], ['Windfall','When an enemy is destroyed, draw a card.'] ],
+      active:  [ ['Lucky Strike','Deal 1–3 random damage.'], ['Jackpot Draw','Draw 2 cards; discard 1.'], ['Double Down','Double your next ability\u2019s effect; take 1 damage.'], ['Golden Chance','Flip a coin: heads deal 3, tails draw 2.'] ],
+      ultimate:[ ["Fortune's Blessing",'All allies gain +1 Power and draw a card.'], ['Jackpot Surge','Deal damage equal to cards in your hand.'], ['House Always Wins','Steal 2 XP from your opponent and heal 2.'] ]
+    },
+    Shadow: {
+      passive: [ ['Veiled Presence','Cannot be targeted the turn it enters play.'], ['Silent Watcher','Reveals one enemy card each turn.'], ['Hidden Intent','Your abilities cannot be countered.'] ],
+      active:  [ ['Shadow Step','Become untargetable until your next turn.'], ['Curse Mark','Apply a curse: target takes +1 from all sources.'], ['Life Drain','Deal 2 damage and heal 1.'] ],
+      ultimate:[ ['Eclipse Form','Become a shadow: immune for one full turn.'], ['Umbral Cataclysm','Deal 3 damage to all enemies and curse them.'], ['King of Shadows','Take control of an enemy debuff and reflect it to all foes.'] ]
+    },
+    Nature: {
+      passive: [ ['Regrowth','Restores 1 health at the start of each turn.'], ['Thorned Hide','Attackers take 1 damage.'], ['Wild Bond','Allied beasts gain +1 Power.'] ],
+      active:  [ ['Healing Bloom','Heal an ally for 3.'], ['Entangle','Root an enemy: it cannot act next turn.'], ['Beast Call','Summon a 1/1 beast token.'] ],
+      ultimate:[ ["Worldtree's Embrace",'Fully heal all allies.'], ['Primal Awakening','All allies gain +1/+1 and Thorned Hide.'], ["Gaia's Wrath",'Deal 3 damage to all enemies; heal allies 2.'] ]
+    },
+    Flame: {
+      passive: [ ['Burning Soul','Your damage abilities deal +1.'], ['Ember Heart','When damaged, burn the attacker for 1.'], ['Rising Fury','Gain +1 Power each time this takes damage.'] ],
+      active:  [ ['Fireball','Deal 3 damage to one target.'], ['Flame Lash','Deal 2 damage; burn for 1 next turn.'], ['Ignite','Set a target ablaze: 1 damage for 3 turns.'] ],
+      ultimate:[ ['Inferno','Deal 4 damage to every enemy.'], ['Phoenix Rebirth','On death this turn, revive at full health.'], ['Cataclysm of Cinders','Destroy all burning enemies.'] ]
+    },
+    Frost: {
+      passive: [ ['Frozen Armor','Reduce all incoming damage by 1.'], ['Chilling Aura','Enemies that attack you are slowed.'], ['Permafrost','Frozen enemies stay frozen one extra turn.'] ],
+      active:  [ ['Ice Shard','Deal 2 damage.'], ['Flash Freeze','Freeze a target for one turn.'], ['Glacial Prison','Freeze a target for 2 turns; it takes +1 damage while frozen.'] ],
+      ultimate:[ ['Absolute Zero','Freeze ALL enemies for one full turn.'], ['Eternal Winter','Enemies act last for the next 2 turns.'], ['Avalanche','Deal 3 damage to all enemies; freeze the strongest.'] ]
+    },
+    Storm: {
+      passive: [ ['Static Charge','Every 3rd ability deals +2 damage.'], ['Tailwind','Always acts first in combat.'], ['Storm Caller','Lightning abilities chain to a second target.'] ],
+      active:  [ ['Lightning Bolt','Deal 2 damage; cannot be dodged.'], ['Gale Slash','Deal 1 damage and gain an extra action.'], ['Thunder Rush','Deal 2 damage and act again next round first.'] ],
+      ultimate:[ ['Tempest Fury','Strike all enemies for 2; you act twice next turn.'], ['Skybreaker','Deal 5 damage to one target.'], ['Storm of Ages','All allies act twice this turn.'] ]
+    },
+    Arcane: {
+      passive: [ ['Mana Well','Your ultimate charges 1 turn faster.'], ['Runic Insight','See the top card of your deck at all times.'], ['Spell Echo','Your first spell each game casts twice.'] ],
+      active:  [ ['Arcane Missile','Deal 1 damage three times, split any way.'], ['Rune Burst','Deal 2 damage; draw a card.'], ['Mind Spike','Deal 2 damage; look at opponent\u2019s hand.'] ],
+      ultimate:[ ['Reality Rewrite','Undo all damage dealt to allies this turn.'], ['Grand Conjuration','Summon two 2/2 arcane constructs.'], ['Infinite Library','Draw until you hold 5 cards; abilities cost less this turn.'] ]
+    },
+    Rift: {
+      passive: [ ['Phase Shift','50% chance to phase through the first attack each turn.'], ['Temporal Drift','At the start of each turn, swap one card\u2019s position.'], ['Void Touched','Immune to curses and marks.'] ],
+      active:  [ ['Rift Tear','Deal 2 damage ignoring all defenses.'], ['Time Skip','Skip an enemy\u2019s next turn (once per game).'], ['Gravity Well','Pull all enemies; they cannot retreat this turn.'] ],
+      ultimate:[ ['Singularity','Pull all enemies and deal 2 to each.'], ['Timeline Collapse','Reset the board to the start of last turn.'], ['Cosmic Convergence','Copy the strongest ability used this game and cast it.'] ]
+    },
+    Divine: {
+      passive: [ ['Holy Aegis','Blocks the first debuff applied each turn.'], ["Guardian's Light",'Adjacent allies take 1 less damage.'], ['Sacred Vow','Cannot drop below 1 health while an ally stands.'] ],
+      active:  [ ['Smite','Deal 2 damage; double vs Shadow affinity.'], ['Radiant Heal','Heal an ally 2 and cleanse debuffs.'], ['Judgment','Deal damage equal to target\u2019s Power, max 3.'] ],
+      ultimate:[ ['Divine Intervention','Prevent all damage to allies this turn.'], ['Wrath of Heaven','Deal 3 holy damage to all enemies.'], ['Ascension','An ally gains +2/+2 and Holy Aegis permanently.'] ]
+    },
+    Machine: {
+      passive: [ ['Auto-Repair','Restores 1 health at end of each turn.'], ['Overclock','+1 Power, but takes 1 damage each turn it attacks.'], ['Reinforced Plating','Immune to burn and poison.'] ],
+      active:  [ ['Laser Volley','Deal 1 damage to up to 3 targets.'], ['Deploy Turret','Summon a 0/2 turret that deals 1 each turn.'], ['System Shock','Disable a target\u2019s passive for 2 turns.'] ],
+      ultimate:[ ['Omega Protocol','All allied machines gain +2 Power this turn.'], ['Total Annihilation','Deal 4 damage to one target and 1 to its allies.'], ['Singular Core','Sacrifice 2 health: deal 6 damage to one target.'] ]
+    }
+  };
+  function poolNames(aff, slot){ return (POOLS[aff] || POOLS.Shadow)[slot].map(function(p){ return p[0]; }); }
+  function poolDesc(aff, slot, name){
+    var arr = (POOLS[aff] || POOLS.Shadow)[slot];
+    for(var i=0;i<arr.length;i++) if(arr[i][0] === name) return arr[i][1];
+    return '';
+  }
+
+  // ═══════════ CARD TEMPLATES ═══════════
+  var CARD_TYPES = {
+    'Hero':        { icon:'🛡', hint:'PFP NFTs — dogs, apes, humans, wizards' },
+    'Monster':     { icon:'👹', hint:'Creatures — dragons, beasts, demons' },
+    'Artifact':    { icon:'🗝', hint:'Objects — crowns, weapons, relics' },
+    'SHIFT Spell': { icon:'✨', hint:'Abstract art — portals, cosmic swirls, magic' }
+  };
+
+  // ═══════════ RARITY & FRAMES ═══════════
+  var RARITY_COLORS = { Common:'#b07845', Uncommon:'#b8bec8', Rare:'#e0b341', Epic:'#9b8cff', Legendary:'#ffffff', Mythic:'#ff6b9d' };
+  var FRAME_NAMES = { Common:'Bronze', Uncommon:'Silver', Rare:'Gold', Epic:'Purple', Legendary:'Rainbow Foil', Mythic:'Animated Cosmic' };
+
+  var POWER_BASE  = { Common:2, Uncommon:3, Rare:4, Epic:5, Legendary:6, Mythic:7 };
+  var POWER_BONUSES  = ['Weapon','Armor','Magic Aura','Pet Companion','Vehicle'];
+  var POWER_MAX = 10;
+  var HEALTH_BASE = { Common:3, Uncommon:4, Rare:5, Epic:6, Legendary:7, Mythic:8 };
+  var HEALTH_BONUSES = ['Armor','Shield','Heavy Body','Guardian Trait'];
+  var HEALTH_MAX = 12;
+
+  function calcXP(lv){ if(lv<=1)return 1; if(lv<=3)return 2; if(lv<=5)return 3; if(lv<=7)return 4; return 5; }
+  function rarityFromScore(s){ if(s<=20)return'Common'; if(s<=40)return'Uncommon'; if(s<=60)return'Rare'; if(s<=80)return'Epic'; if(s<=95)return'Legendary'; return'Mythic'; }
+  function detectBonuses(list, keys){
+    var str = list.map(function(t){return t.k+' '+t.v;}).join(' ').toLowerCase();
+    return keys.filter(function(k){return str.indexOf(k.toLowerCase())!==-1;});
+  }
+
+  // ═══════════ FORGE KEYWORD SCAN ═══════════
+  var VISUAL_KEYWORDS = [
+    { kws:['gold','golden','coin','treasure','clover','lucky'], aff:'Fortune', label:'Gold' },
+    { kws:['purple energy','purple aura','cosmic','galaxy','portal','rift'], aff:'Rift', label:'Purple Energy' },
+    { kws:['fire','flame','burning','ember','lava','blaze'], aff:'Flame', label:'Fire' },
+    { kws:['wings','angel','halo','feathered','seraph'], aff:'Divine', label:'Wings' },
+    { kws:['mechanical','robot','cyborg','gears','circuit','tech'], aff:'Machine', label:'Mechanical Parts' },
+    { kws:['nature','plant','leaf','leaves','forest','vine','flower','moss'], aff:'Nature', label:'Nature Elements' },
+    { kws:['ice','frost','frozen','snow','glacier'], aff:'Frost', label:'Ice' },
+    { kws:['lightning','thunder','storm','wind'], aff:'Storm', label:'Lightning' },
+    { kws:['shadow','dark hood','stealth','night'], aff:'Shadow', label:'Shadow' },
+    { kws:['magic','rune','spell','crystal','arcane'], aff:'Arcane', label:'Magic' }
+  ];
+  var SPECIAL_TRAITS = [
+    { kws:['crown','king','queen','royal'], trait:'Leader', label:'Crown', desc:'Allied cards gain +1 Power on the turn this card enters play.' },
+    { kws:['sword','weapon','blade','axe','spear','dagger','hammer'], trait:'Warrior Trait', label:'Sword/Weapon', desc:'Active abilities deal +1 damage.' }
+  ];
+  function forgeScan(textBlob){
+    var t = (textBlob || '').toLowerCase();
+    var affHits = [], traitHits = [], affVotes = {};
+    VISUAL_KEYWORDS.forEach(function(vk){
+      if(vk.kws.some(function(k){ return t.indexOf(k) !== -1; })){
+        affHits.push({ label: vk.label, aff: vk.aff });
+        affVotes[vk.aff] = (affVotes[vk.aff] || 0) + 1;
+      }
+    });
+    SPECIAL_TRAITS.forEach(function(st){
+      if(st.kws.some(function(k){ return t.indexOf(k) !== -1; })) traitHits.push({ label: st.label, trait: st.trait, desc: st.desc });
+    });
+    var topAff = null, topN = 0;
+    Object.keys(affVotes).forEach(function(a){ if(affVotes[a] > topN){ topN = affVotes[a]; topAff = a; } });
+    return { affHits: affHits, traitHits: traitHits, topAff: topAff };
+  }
+
+  // ═══════════ COLLECTION RECOGNITION REGISTRY ═══════════
+  // The Forge recognizes collections automatically. Partners lock class + affinity.
+  var COLLECTION_REGISTRY = [
+    { match:'fuddy dog',     name:'Fuddy Dogs',  lockClass:'Guardian', lockAff:'Fortune', bonus:{ name:'Pack Instinct',  desc:'Allied Fuddy Dogs gain +1 Power.' } },
+    { match:'basc',          name:'BASC',        lockClass:'Warrior',  lockAff:'Fortune', bonus:{ name:'Alpha Presence', desc:'Gain +1 XP when defeating a monster.' } },
+    { match:'mad lads',      name:'Mad Lads',    lockClass:'Rogue',    lockAff:'Storm',   bonus:{ name:'Mad Energy',     desc:'Allied Mad Lads gain an extra action on their first turn.' } },
+    { match:'claynosaurz',   name:'Claynosaurz', lockClass:'Monster',  lockAff:'Nature',  bonus:{ name:'Herd Stampede',  desc:'Allied Claynosaurz gain +1 Health.' } },
+    { match:'solana monkey', name:'SMB',         lockClass:'Ranger',   lockAff:'Fortune', bonus:{ name:'Banana Stash',   desc:'Draw a card when an allied SMB is played.' } },
+    { match:'smb',           name:'SMB',         lockClass:'Ranger',   lockAff:'Fortune', bonus:{ name:'Banana Stash',   desc:'Draw a card when an allied SMB is played.' } },
+    { match:'degods',        name:'DeGods',      lockClass:'Paladin',  lockAff:'Divine',  bonus:{ name:'Deadly Devotion', desc:'Allied DeGods gain +1 Power while at full health.' } }
+  ];
+  function detectCollection(collection, tokenName){
+    var t = ((collection || '') + ' ' + (tokenName || '')).toLowerCase();
+    for(var i = 0; i < COLLECTION_REGISTRY.length; i++){
+      if(t.indexOf(COLLECTION_REGISTRY[i].match) !== -1) return COLLECTION_REGISTRY[i];
+    }
+    return null;
+  }
+
+  // ═══════════ CLASSES / ASCENSION / EVOLUTION ═══════════
+  var CLASSES = ['Warrior','Mage','Rogue','Paladin','Shaman','Necromancer','Ranger','Druid','Summoner','Void Walker','Guardian','Oracle','Riftborn','Monster'];
+  var ASCENDED_FORMS = {
+    'Guardian':'Guardian Prime','Warrior':'Warrior King','Oracle':'Radiant Oracle','Riftborn':'Void Ascendant','Void Walker':'Void Ascendant',
+    'Mage':'Archmage Eternal','Rogue':'Shadow Sovereign','Paladin':'Celestial Paladin','Shaman':'Spirit Avatar','Necromancer':'Lich Lord',
+    'Ranger':'Wildlord','Druid':'Worldtree Avatar','Summoner':'Gate Master','Monster':'Apex Horror'
+  };
+  function ascendedFormOf(cls){ return ASCENDED_FORMS[cls] || ('Ascended ' + cls); }
+  function evoTitle(lv){
+    if(lv >= 6) return 'Ascended form';
+    return ['','Base card','+1 Power','Passive upgrade','+1 Health','Ultimate unlocked'][lv] || 'Base card';
+  }
+
+  // ═══════════ STATE ═══════════
+  var uploadedImage = null, uploadedB64 = null, uploadedMime = 'image/jpeg';
+  var imgEl = null, genImgEl = null, usedGeneratedArt = false;
+  var traits = [], cardData = null, evoLevel = 1;
+  var wallet = null;
+  var mythicAnim = null, mythicT = 0;
+
+  function $(id){ return document.getElementById(id); }
+  function asStr(v, fb){ return (typeof v === 'string' && v.length) ? v : (fb || ''); }
+  function asInt(v, fb, lo, hi){
+    var n = parseInt(v, 10);
+    if(isNaN(n)) n = fb;
+    if(typeof lo === 'number') n = Math.max(lo, n);
+    if(typeof hi === 'number') n = Math.min(hi, n);
+    return n;
+  }
+  function hashStr(s){
+    var h = 2166136261;
+    for(var i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h;
+  }
+  function pick(arr, seed){ return arr[Math.abs(seed) % arr.length]; }
+
+  // ═══════════ SANITIZER ═══════════
+  function sanitizeAI(ai, tokenName, validTraits){
+    ai = (ai && typeof ai === 'object') ? ai : {};
+    var seed = hashStr(tokenName + '|' + validTraits.map(function(t){return t.k+t.v;}).join('|'));
+    var out = {};
+    out.name = asStr(ai.name, (tokenName || 'Unknown').replace(/#\d+/, '').trim() || 'Unknown');
+    out['class'] = CLASSES.indexOf(ai['class']) !== -1 ? ai['class'] : pick(CLASSES, seed >> 2);
+    out.affinity = AFFINITIES[ai.affinity] ? ai.affinity : pick(Object.keys(AFFINITIES), seed >> 4);
+    out.cardType = CARD_TYPES[ai.cardType] ? ai.cardType : 'Hero';
+    out.rarityScore = asInt(ai.rarityScore, 5 + (seed % 91), 0, 100);
+    out.level = asInt(ai.level, 1 + ((seed >> 3) % 5), 1, 10);
+    out.lore = asStr(ai.lore, 'Born from fractured luck within the Clover Rift, it wanders the realms gathering forgotten fortunes.');
+    out.personality = asStr(ai.personality, pick(['Bold & Reckless','Cold & Calculating','Wise & Patient','Wild & Untamed','Silent & Deadly','Noble & Just'], seed >> 6));
+    out.visualTraits = Array.isArray(ai.visualTraits) ? ai.visualTraits.filter(function(x){ return typeof x === 'string'; }) : [];
+    out.artPrompt = asStr(ai.artPrompt, '');
+
+    // abilities validated against the AFFINITY POOL (re-validated after collection lock)
+    out._rawAbilities = { passive: ai.passive, active: ai.active, ultimate: ai.ultimate };
+    return out;
+  }
+
+  function fitAbilitiesToPool(out, seed){
+    function fix(src, slot, shift){
+      src = (src && typeof src === 'object') ? src : {};
+      var names = poolNames(out.affinity, slot);
+      var nm = names.indexOf(src.name) !== -1 ? src.name : pick(names, seed >> shift);
+      var ds = poolDesc(out.affinity, slot, nm);
+      return { name: nm, description: asStr(src.description && names.indexOf(src.name) !== -1 ? src.description : '', ds) || ds };
+    }
+    var seedBase = hashStr(out.name + out.affinity);
+    out.passive  = fix(out._rawAbilities.passive,  'passive',  2);
+    out.active   = fix(out._rawAbilities.active,   'active',   4);
+    out.ultimate = fix(out._rawAbilities.ultimate, 'ultimate', 6);
+    delete out._rawAbilities;
+  }
+
+  // ═══════════ UI BOOTSTRAP ═══════════
+  Object.keys(AFFINITIES).forEach(function(name){
+    var a = AFFINITIES[name];
+    var c = document.createElement('div');
+    c.className = 'aff-chip';
+    c.style.background = a.dark;
+    c.style.borderColor = a.mid;
+    c.title = 'Pool: ' + poolNames(name,'passive').join(', ') + ' / ' + poolNames(name,'active').join(', ') + ' / ' + poolNames(name,'ultimate').join(', ');
+    c.innerHTML = '<span class="ic">'+a.icon+'</span><span class="nm" style="color:'+a.pale+'">'+name+'</span><span class="pl" style="color:'+a.light+'">'+a.playstyle+'</span>';
+    $('affGrid').appendChild(c);
+  });
+
+  // collection registration selects
+  (function(){
+    var cs = $('regClass'), as = $('regAff');
+    CLASSES.forEach(function(c){ var o = document.createElement('option'); o.value = c; o.textContent = c; cs.appendChild(o); });
+    Object.keys(AFFINITIES).forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; as.appendChild(o); });
+  })();
+
+  function renderRegistry(){
+    $('regList').innerHTML = COLLECTION_REGISTRY.map(function(c){
+      return '<div>• <b>' + c.name + '</b> → Class: <b>' + c.lockClass + '</b>, Affinity: <b>' + c.lockAff + '</b>' + (c.bonus ? ' · ' + c.bonus.name : '') + '</div>';
+    }).join('');
+  }
+  renderRegistry();
+
+  $('regBtn').addEventListener('click', function(){
+    var nm = $('regName').value.trim();
+    if(!nm) return;
+    COLLECTION_REGISTRY.unshift({
+      match: nm.toLowerCase(), name: nm,
+      lockClass: $('regClass').value, lockAff: $('regAff').value,
+      bonus: { name: nm + ' Synergy', desc: 'Allied ' + nm + ' cards gain +1 Power.' }
+    });
+    $('regName').value = '';
+    renderRegistry();
+    updateCollBadge();
+  });
+
+  function updateCollBadge(){
+    var c = detectCollection($('collection').value, $('tokenName').value);
+    var b = $('collBadge');
+    if(c){
+      b.className = 'coll-badge show';
+      b.innerHTML = '🤝 <b>' + c.name + '</b> recognized — Class locked to <b>' + c.lockClass + '</b>, Affinity locked to <b>' + c.lockAff + '</b>' + (c.bonus ? '. Collection bonus: <b>' + c.bonus.name + '</b> — ' + c.bonus.desc : '');
+    } else {
+      b.className = 'coll-badge';
+    }
+  }
+  $('collection').addEventListener('input', updateCollBadge);
+
+  // ═══════════ WALLET — multi-provider ═══════════
+  function setWallet(chain, address, label){
+    wallet = { chain: chain, address: address, provider: label };
+    var st = $('walletStatus');
+    var short = address.length > 12 ? address.slice(0,6) + '…' + address.slice(-4) : address;
+    st.textContent = '✓ ' + label + ' connected: ' + short;
+    st.className = 'wallet-status ok';
+  }
+  function walletFail(msg){
+    var st = $('walletStatus');
+    st.className = 'wallet-status';
+    st.textContent = msg;
+  }
+
+  var WALLET_CONNECTORS = {
+    phantom: function(){
+      var p = (window.phantom && window.phantom.solana) || (window.solana && window.solana.isPhantom ? window.solana : null);
+      if(!p) return walletFail('Phantom not detected. Extensions can\u2019t reach this sandboxed preview — download the file and open it in your browser, or use ⌨ Enter address.');
+      p.connect().then(function(resp){
+        setWallet('solana', resp.publicKey.toString(), 'Phantom');
+      }).catch(function(){ walletFail('Phantom connection rejected.'); });
+    },
+    metamask: function(){
+      var eth = window.ethereum;
+      if(eth && eth.providers && eth.providers.length){
+        var mm = eth.providers.filter(function(p){ return p.isMetaMask; })[0];
+        if(mm) eth = mm;
+      }
+      if(!eth) return walletFail('MetaMask not detected. Extensions can\u2019t reach this sandboxed preview — download the file and open it in your browser, or use ⌨ Enter address.');
+      eth.request({ method: 'eth_requestAccounts' }).then(function(accts){
+        setWallet('ethereum', accts[0], 'MetaMask');
+      }).catch(function(){ walletFail('MetaMask connection rejected.'); });
+    },
+    solflare: function(){
+      var p = window.solflare;
+      if(!p) return walletFail('Solflare not detected in this preview — download the file and open it in your browser, or use ⌨ Enter address.');
+      p.connect().then(function(){
+        setWallet('solana', p.publicKey.toString(), 'Solflare');
+      }).catch(function(){ walletFail('Solflare connection rejected.'); });
+    },
+    backpack: function(){
+      var p = window.backpack || (window.xnft && window.xnft.solana);
+      if(!p) return walletFail('Backpack not detected in this preview — download the file and open it in your browser, or use ⌨ Enter address.');
+      p.connect().then(function(resp){
+        var pk = (resp && resp.publicKey) || p.publicKey;
+        setWallet('solana', pk.toString(), 'Backpack');
+      }).catch(function(){ walletFail('Backpack connection rejected.'); });
+    },
+    seeker: function(){
+      // Seeker / Saga and other mobile wallets use the Solana Mobile Wallet Adapter (MWA),
+      // which requires the page to be served from a real https domain and the
+      // @solana-mobile/wallet-adapter library. From a local file or sandbox, fall back to manual.
+      if(window.solanaMobileWalletAdapter){
+        walletFail('Mobile Wallet Adapter detected — integrate @solana-mobile/wallet-adapter for full Seeker support.');
+        return;
+      }
+      walletFail('Seeker connects via the Solana Mobile Wallet Adapter when this app is hosted on a domain. For now, use ⌨ Enter address to bind your Seeker wallet address.');
+      $('manualWalletWrap').style.display = 'flex';
+      $('manualWallet').focus();
+    },
+    manual: function(){
+      var wrap = $('manualWalletWrap');
+      wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
+      if(wrap.style.display === 'flex') $('manualWallet').focus();
+    }
+  };
+
+  $('walletRow').addEventListener('click', function(e){
+    var btn = e.target.closest('[data-wallet]');
+    if(!btn) return;
+    var fn = WALLET_CONNECTORS[btn.getAttribute('data-wallet')];
+    if(fn) fn();
+  });
+
+  $('manualWallet').addEventListener('input', function(){
+    var v = $('manualWallet').value.trim();
+    if(v.length >= 32 || (v.indexOf('0x') === 0 && v.length === 42)){
+      var chain = v.indexOf('0x') === 0 ? 'ethereum' : 'solana';
+      setWallet(chain, v, 'Manual (' + chain + ')');
+      wallet.manualEntry = true;
+    } else if(v.length === 0){
+      wallet = null;
+      walletFail('Not connected — cards will be stamped UNVERIFIED');
+    }
+  });
+
+  function makeCardId(name, nftId){
+    var h = hashStr(name + '|' + nftId + '|' + Date.now());
+    return 'SHIFT-' + ('00000000' + h.toString(16).toUpperCase()).slice(-8);
+  }
+
+  // ═══════════ TRAITS UI ═══════════
+  function addTrait(k, v){
+    traits.push({ id: 't'+Date.now()+Math.floor(Math.random()*9999), k: k||'', v: v||'' });
+    renderTraits();
+  }
+  function renderTraits(){
+    var list = $('traitsList');
+    list.innerHTML = '';
+    traits.forEach(function(t){
+      var row = document.createElement('div');
+      row.className = 'trait-row';
+      var iK = document.createElement('input');
+      iK.placeholder = 'Trait type (e.g. Weapon)'; iK.value = t.k;
+      iK.addEventListener('input', function(){ t.k = iK.value; });
+      var iV = document.createElement('input');
+      iV.placeholder = 'Value (e.g. Flaming Sword)'; iV.value = t.v;
+      iV.addEventListener('input', function(){ t.v = iV.value; });
+      var del = document.createElement('button');
+      del.className = 'btn-x'; del.textContent = '×';
+      del.setAttribute('aria-label','Remove trait');
+      del.addEventListener('click', function(){
+        traits = traits.filter(function(x){ return x.id !== t.id; });
+        renderTraits();
+      });
+      row.appendChild(iK); row.appendChild(iV); row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+  $('addTraitBtn').addEventListener('click', function(){ addTrait(); });
+
+  // ═══════════ UPLOAD ═══════════
+  var fileInput = $('fileInput');
+  var uz = $('uploadZone');
+  uz.addEventListener('click', function(){ fileInput.click(); });
+  fileInput.addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0];
+    if(f) handleFile(f);
+  });
+  uz.addEventListener('dragover', function(e){ e.preventDefault(); uz.classList.add('drag'); });
+  uz.addEventListener('dragleave', function(){ uz.classList.remove('drag'); });
+  uz.addEventListener('drop', function(e){
+    e.preventDefault(); uz.classList.remove('drag');
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f && f.type.indexOf('image/') === 0) handleFile(f);
+  });
+  function handleFile(f){
+    uploadedMime = f.type || 'image/jpeg';
+    var r = new FileReader();
+    r.onload = function(ev){
+      uploadedImage = ev.target.result;
+      uploadedB64 = uploadedImage.split(',')[1];
+      imgEl = new Image();
+      imgEl.onload = function(){ checkReady(); };
+      imgEl.src = uploadedImage;
+      uz.classList.add('has-image');
+      uz.innerHTML = '<img src="'+uploadedImage+'" alt="NFT preview"><div class="uz-change">Change image</div>';
+      checkReady();
+    };
+    r.readAsDataURL(f);
+  }
+
+  $('tokenName').addEventListener('input', function(){ checkReady(); updateCollBadge(); });
+  function checkReady(){
+    var hasName = $('tokenName').value.trim().length > 0;
+    var ready = !!uploadedImage && hasName;
+    $('genBtn').disabled = !ready;
+    var h = $('reqHint');
+    if(ready){ h.style.display = 'none'; }
+    else {
+      h.style.display = 'block';
+      if(!uploadedImage && !hasName) h.textContent = 'Upload an NFT image and enter a token name to enable';
+      else if(!uploadedImage) h.textContent = 'Upload an NFT image to enable';
+      else h.textContent = 'Enter a token name to enable';
+    }
+  }
+
+  function setStatus(msg, cls){
+    var s = $('status');
+    s.className = 'status show ' + (cls || '');
+    s.textContent = msg;
+  }
+  function hideStatus(){ $('status').className = 'status'; }
+
+  // ═══════════ CLAUDE ANALYSIS ═══════════
+  function claudeAnalyze(tokenName, collection, description, traitStr, requestedType){
+    var affList = Object.keys(AFFINITIES).map(function(n){
+      var a = AFFINITIES[n]; return n+' ('+a.theme+' → '+a.playstyle+')';
+    }).join(', ');
+    var poolText = Object.keys(POOLS).map(function(aff){
+      return aff + ' pool — Passive: ' + poolNames(aff,'passive').join(', ') +
+        ' | Active: ' + poolNames(aff,'active').join(', ') +
+        ' | Ultimate: ' + poolNames(aff,'ultimate').join(', ');
+    }).join('\n');
+
+    var prompt =
+      'You are the SHIFT Forge AI. Analyze this NFT image and metadata.\n\n' +
+      'NFT Name: ' + tokenName + '\n' +
+      'Collection: ' + (collection || 'Unknown') + '\n' +
+      (description ? 'Description: ' + description + '\n' : '') +
+      (traitStr ? 'NFT Traits:\n' + traitStr + '\n' : '') +
+      '\nCARD TEMPLATES — every NFT becomes one of: Hero (PFP characters: dogs, apes, humans, wizards), Monster (creatures: dragons, beasts, demons), Artifact (objects: crowns, weapons, relics), SHIFT Spell (abstract art: portals, cosmic swirls, magical effects).\n' +
+      (requestedType !== 'auto' ? 'The user has chosen cardType: ' + requestedType + '. Use it.\n' : 'Determine cardType from the artwork.\n') +
+      '\nVisual keyword scan: Gold→Fortune, Purple Energy→Rift, Fire→Flame, Wings→Divine, Mechanical Parts→Machine, Nature Elements→Nature, Crown→Leader, Sword/Weapon→Warrior. Mention any seen in visualTraits using those exact words.\n' +
+      '\nABILITY POOLS — abilities MUST come from the pool matching the affinity you choose:\n' + poolText + '\n' +
+      '\nPower, Health, and XP are engine-calculated. Do NOT generate them. Determine only:\n' +
+      '1. name 2. cardType 3. class (one of: ' + CLASSES.join(', ') + ') 4. affinity 5. rarityScore (0-100; 0-20=Common, 21-40=Uncommon, 41-60=Rare, 61-80=Epic, 81-95=Legendary, 96-100=Mythic) 6. level (1-10) 7. lore (max 140 chars, style: "Born from fractured luck within the Clover Rift, Fuddy Dog Alpha wanders the realms gathering forgotten fortunes.") 8. personality 9. visualTraits (4-5) 10. artPrompt (vivid scene description for an image generator, no artist names) 11. passive 12. active 13. ultimate — each {name, description} from the matching affinity pool ONLY.\n\n' +
+      'Return ONLY valid JSON, no markdown, no backticks:\n' +
+      '{"name":"","cardType":"Hero","class":"","affinity":"","rarityScore":10,"level":1,"lore":"","personality":"","visualTraits":[],"artPrompt":"","passive":{"name":"","description":""},"active":{"name":"","description":""},"ultimate":{"name":"","description":""}}';
+
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1300,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: uploadedMime, data: uploadedB64 } },
+          { type: 'text', text: prompt }
+        ]}]
+      })
+    })
+    .then(function(res){
+      if(!res.ok) throw new Error('Claude API HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data){
+      var raw = (data.content || []).map(function(i){ return i.text || ''; }).join('');
+      return JSON.parse(raw.replace(/```json|```/g, '').trim());
+    });
+  }
+
+  // ═══════════ IMAGE GENERATION ═══════════
+  function buildArtPrompt(d, styleNote){
+    var a = AFFINITIES[d.affinity] || AFFINITIES.Shadow;
+    var base = d.artPrompt && d.artPrompt.length > 10
+      ? d.artPrompt
+      : ('A fantasy ' + d['class'] + ' ' + d.cardType.toLowerCase() + ' inspired by ' + d.name);
+    return base + '. Trading card game art, ' + d.affinity.toLowerCase() + ' affinity theme (' + a.theme.toLowerCase() + '), dramatic lighting, rich detail, centered composition, no text, no borders' + (styleNote ? '. Style: ' + styleNote : '. Digital fantasy painting style');
+  }
+  function generateImageDalle(apiKey, prompt){
+    return fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: 'dall-e-3', prompt: prompt, n: 1, size: '1024x1024', quality: 'standard', response_format: 'b64_json' })
+    }).then(function(res){
+      if(!res.ok){
+        return res.json().then(function(e){ throw new Error('DALL·E: ' + (e.error && e.error.message ? e.error.message : 'HTTP ' + res.status)); }, function(){ throw new Error('DALL·E HTTP ' + res.status); });
+      }
+      return res.json();
+    }).then(function(data){
+      var b64 = data.data && data.data[0] && data.data[0].b64_json;
+      if(!b64) throw new Error('DALL·E returned no image data');
+      return 'data:image/png;base64,' + b64;
+    });
+  }
+  function generateImageStability(apiKey, prompt){
+    var form = new FormData();
+    form.append('prompt', prompt);
+    form.append('output_format', 'png');
+    form.append('aspect_ratio', '1:1');
+    return fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + apiKey, 'Accept': 'application/json' },
+      body: form
+    }).then(function(res){
+      if(!res.ok){
+        return res.json().then(function(e){ throw new Error('Stability: ' + (e.errors ? e.errors.join('; ') : (e.message || 'HTTP ' + res.status))); }, function(){ throw new Error('Stability HTTP ' + res.status); });
+      }
+      return res.json();
+    }).then(function(data){
+      if(!data.image) throw new Error('Stability returned no image data');
+      return 'data:image/png;base64,' + data.image;
+    });
+  }
+  function loadImage(src){
+    return new Promise(function(resolve, reject){
+      var im = new Image();
+      im.onload = function(){ resolve(im); };
+      im.onerror = function(){ reject(new Error('Image failed to load')); };
+      im.src = src;
+    });
+  }
+
+  // ═══════════ EVOLUTION VIEW ═══════════
+  function evolvedView(d, lv){
+    var v = {};
+    Object.keys(d).forEach(function(k){ v[k] = d[k]; });
+    v.evoLevel = lv;
+    v.level = lv;
+    v.xpValue = calcXP(lv);
+    v.power = Math.min(d.basePower + (lv >= 2 ? 1 : 0), POWER_MAX);
+    v.health = Math.min(d.baseHealth + (lv >= 4 ? 1 : 0), HEALTH_MAX);
+    v.passiveUpgraded = lv >= 3;
+    v.ultimateUnlocked = lv >= 5;
+    v.ascended = lv >= 6;
+    v.ascendedForm = ascendedFormOf(d['class']);
+    v.displayClass = v.ascended ? v.ascendedForm : d['class'];
+    v.displayName = v.ascended ? d.name + ' ✦' : d.name;
+    return v;
+  }
+
+  // ═══════════ MAIN FLOW ═══════════
+  $('genBtn').addEventListener('click', generate);
+
+  function generate(){
+    var btn = $('genBtn');
+    btn.disabled = true;
+    btn.textContent = 'Forging…';
+    $('output').classList.remove('show');
+    genImgEl = null; usedGeneratedArt = false;
+    stopMythicAnim();
+
+    var tokenName = $('tokenName').value.trim();
+    var collection = $('collection').value.trim();
+    var description = $('description').value.trim();
+    var nftId = $('nftId').value.trim();
+    var requestedType = $('cardType').value;
+    var validTraits = traits.filter(function(t){ return t.k && t.v; });
+    var traitStr = validTraits.map(function(t){ return t.k+': '+t.v; }).join('\n');
+    var provider = $('imgProvider').value;
+    var apiKey = $('imgApiKey').value.trim();
+    var styleNote = $('imgStyle').value.trim();
+    var warning = '';
+
+    setStatus('Step 1/3 — Forge AI scanning NFT visuals, type, affinity & abilities…', 'pulse');
+
+    claudeAnalyze(tokenName, collection, description, traitStr, requestedType)
+      .catch(function(err){
+        console.warn('Claude analysis failed, using local fallback:', err);
+        warning = 'Claude analysis unavailable (' + err.message + ') — used local Forge analyzer. Run inside the Claude artifact preview for full AI analysis.';
+        return {};
+      })
+      .then(function(rawAI){
+        var ai = sanitizeAI(rawAI, tokenName, validTraits);
+
+        // manual template override
+        if(requestedType !== 'auto') ai.cardType = requestedType;
+
+        // forge keyword scan
+        var scanBlob = [tokenName, collection, description, traitStr, ai.visualTraits.join(' ')].join(' ');
+        var scan = forgeScan(scanBlob);
+        if(scan.topAff && AFFINITIES[scan.topAff]) ai.affinity = scan.topAff;
+
+        // COLLECTION RECOGNITION — locks class + affinity, grants bonus
+        var coll = detectCollection(collection, tokenName);
+        if(coll){
+          ai['class'] = coll.lockClass;
+          ai.affinity = coll.lockAff;
+        }
+
+        // abilities must come from the FINAL affinity pool
+        fitAbilitiesToPool(ai, hashStr(tokenName));
+
+        var rarity = rarityFromScore(ai.rarityScore);
+        var pB = detectBonuses(validTraits, POWER_BONUSES);
+        var hB = detectBonuses(validTraits, HEALTH_BONUSES);
+
+        cardData = ai;
+        cardData.rarity = rarity;
+        cardData.frameName = FRAME_NAMES[rarity];
+        cardData.powerBase = POWER_BASE[rarity];
+        cardData.powerBonuses = pB;
+        cardData.basePower = Math.min(cardData.powerBase + pB.length, POWER_MAX);
+        cardData.healthBase = HEALTH_BASE[rarity];
+        cardData.healthBonuses = hB;
+        cardData.baseHealth = Math.min(cardData.healthBase + hB.length, HEALTH_MAX);
+        cardData.forgeScan = scan;
+        cardData.specialTraits = scan.traitHits;
+        cardData.recognizedCollection = coll || null;
+        cardData.collectionBonus = coll ? coll.bonus : null;
+
+        // OWNERSHIP RECORD
+        cardData.ownership = {
+          wallet: wallet ? wallet.address : null,
+          chain: wallet ? wallet.chain : null,
+          nft: nftId || tokenName,
+          cardId: makeCardId(ai.name, nftId || tokenName),
+          verified: !!wallet,
+          note: wallet ? 'Wallet connected. Production must verify on-chain ownership server-side before minting the card.' : 'No wallet connected — card stamped UNVERIFIED.'
+        };
+
+        evoLevel = cardData.level;
+
+        if(provider === 'none') return null;
+        if(!apiKey){
+          warning += (warning ? '\n' : '') + 'No API key for ' + (provider === 'dalle' ? 'DALL·E' : 'Stability') + ' — used original NFT art.';
+          return null;
+        }
+        setStatus('Step 2/3 — ' + (provider === 'dalle' ? 'DALL·E 3' : 'Stable Diffusion') + ' painting enhanced SHIFT artwork…', 'pulse');
+        var artPrompt = buildArtPrompt(cardData, styleNote);
+        cardData.artPromptUsed = artPrompt;
+        var p = provider === 'dalle' ? generateImageDalle(apiKey, artPrompt) : generateImageStability(apiKey, artPrompt);
+        return p.then(loadImage).then(function(im){
+          genImgEl = im;
+          usedGeneratedArt = true;
+        }).catch(function(err){
+          console.warn('Image generation failed:', err);
+          warning += (warning ? '\n' : '') + 'Image generation failed: ' + err.message + ' — used original NFT art.';
+        });
+      })
+      .then(function(){
+        setStatus('Step 3/3 — Rendering card…', 'pulse');
+        return new Promise(function(r){ setTimeout(r, 60); });
+      })
+      .then(function(){
+        refreshAll();
+        $('output').classList.add('show');
+        if(warning) setStatus(warning, 'warn');
+        else hideStatus();
+        btn.textContent = '⚒ Re-forge card';
+        btn.disabled = false;
+        $('cardCanvas').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      })
+      .catch(function(err){
+        console.error('Forge fatal error:', err);
+        setStatus('Forge failed: ' + (err && err.message ? err.message : 'unknown') + ' — try again.', 'error');
+        btn.textContent = '⚒ Forge SHIFT Card';
+        btn.disabled = false;
+      });
+  }
+
+  // ═══════════ EVOLUTION CONTROLS ═══════════
+  $('evoUp').addEventListener('click', function(){ if(evoLevel < 10){ evoLevel++; refreshAll(); } });
+  $('evoDown').addEventListener('click', function(){ if(evoLevel > 1){ evoLevel--; refreshAll(); } });
+
+  function refreshAll(){
+    if(!cardData) return;
+    stopMythicAnim();
+    var v = evolvedView(cardData, evoLevel);
+    drawCard(v, 0);
+    renderEvo(v);
+    renderDetails(v);
+    if(cardData.rarity === 'Mythic') startMythicAnim(v);
+  }
+
+  function startMythicAnim(v){
+    mythicT = 0;
+    function tick(){
+      mythicT += 0.016;
+      drawCard(v, mythicT);
+      mythicAnim = requestAnimationFrame(tick);
+    }
+    mythicAnim = requestAnimationFrame(tick);
+  }
+  function stopMythicAnim(){
+    if(mythicAnim){ cancelAnimationFrame(mythicAnim); mythicAnim = null; }
+  }
+
+  function renderEvo(v){
+    $('evoUp').disabled = evoLevel >= 10;
+    $('evoDown').disabled = evoLevel <= 1;
+    var lvEl = $('evoLv');
+    lvEl.className = 'evo-lv' + (v.ascended ? ' asc' : '');
+    lvEl.innerHTML = '<div class="n">' + (v.ascended ? '✦ ' : '') + 'Lv ' + evoLevel + '</div><div class="t">' + evoTitle(evoLevel) + '</div>';
+    $('evoMiles').innerHTML =
+      '<div class="' + (evoLevel>=1?'got':'not') + '">Level 1 — Base card</div>' +
+      '<div class="' + (evoLevel>=2?'got':'not') + '">Level 2 — +1 Power</div>' +
+      '<div class="' + (evoLevel>=3?'got':'not') + '">Level 3 — Passive upgrade</div>' +
+      '<div class="' + (evoLevel>=4?'got':'not') + '">Level 4 — +1 Health</div>' +
+      '<div class="' + (evoLevel>=5?'got':'not') + '">Level 5 — Ultimate unlocked</div>' +
+      '<div class="' + (evoLevel>=6?'got':'not') + '">Level 6+ — Ascended form: ' + v.ascendedForm + '</div>';
+  }
+
+  // ═══════════ FRAMES ═══════════
+  var W = 680, H = 1000;
+
+  function roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+  }
+
+  // ═══════════ OFFICIAL PREMIUM FOIL FRAMES ═══════════
+  // Common Bronze · Uncommon Silver · Rare Gold · Epic Purple ·
+  // Legendary Rainbow Foil · Mythic Animated Cosmic
+  var METAL = {
+    Common:   { hi:'#e8c79a', mid:'#a8743f', lo:'#5e3a16', gem:'#caa472' },   // bronze
+    Uncommon: { hi:'#ffffff', mid:'#b8c0cc', lo:'#6e7682', gem:'#e8ecf2' },   // silver
+    Rare:     { hi:'#fff3c4', mid:'#e0b341', lo:'#8a5f12', gem:'#ffe28a' },   // gold
+    Epic:     { hi:'#d9ccff', mid:'#8a6ff0', lo:'#46309e', gem:'#b9a6ff' }    // purple
+  };
+
+  function metalBand(ctx, m, inset, width, sheenT){
+    // base metal gradient (vertical)
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, m.hi); g.addColorStop(0.25, m.mid); g.addColorStop(0.5, m.lo);
+    g.addColorStop(0.75, m.mid); g.addColorStop(1, m.hi);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = g;
+    roundRect(ctx, inset, inset, W-inset*2, H-inset*2, 34-inset);
+    ctx.stroke();
+    // diagonal foil sheen sweep across the band
+    var sx = ((sheenT || 0) * 0.25 % 1.4) - 0.2;
+    var sg = ctx.createLinearGradient(W*(sx-0.18), 0, W*(sx+0.18), H*0.4);
+    sg.addColorStop(0, 'rgba(255,255,255,0)');
+    sg.addColorStop(0.5, 'rgba(255,255,255,0.45)');
+    sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.lineWidth = width;
+    ctx.strokeStyle = sg;
+    roundRect(ctx, inset, inset, W-inset*2, H-inset*2, 34-inset);
+    ctx.stroke();
+  }
+
+  function cornerGems(ctx, color, glow){
+    var pts = [[34,34],[W-34,34],[34,H-34],[W-34,H-34]];
+    pts.forEach(function(p){
+      if(glow){
+        ctx.shadowColor = color; ctx.shadowBlur = 12;
+      }
+      ctx.save();
+      ctx.translate(p[0], p[1]);
+      ctx.rotate(Math.PI/4);
+      var g = ctx.createLinearGradient(-7, -7, 7, 7);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, color); g.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = g;
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.strokeRect(-7, -7, 14, 14);
+      ctx.restore();
+      ctx.shadowBlur = 0;
+    });
+  }
+
+  function frameStroke(ctx, rarity, t, ascended){
+    t = t || 0;
+    if(METAL[rarity]){
+      // ── metallic foil frames: Bronze / Silver / Gold / Purple
+      var m = METAL[rarity];
+      metalBand(ctx, m, 7, 13, t);                       // outer band
+      ctx.lineWidth = 1.5;                               // groove
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      roundRect(ctx, 15, 15, W-30, H-30, 26);
+      ctx.stroke();
+      ctx.lineWidth = 3;                                 // inner bevel
+      var bg2 = ctx.createLinearGradient(0, 0, 0, H);
+      bg2.addColorStop(0, m.hi); bg2.addColorStop(1, m.lo);
+      ctx.strokeStyle = ascended ? '#ffd27a' : bg2;
+      roundRect(ctx, 19, 19, W-38, H-38, 23);
+      ctx.stroke();
+      cornerGems(ctx, m.gem, false);
+    } else if(rarity === 'Legendary'){
+      // ── Rainbow Foil: spectrum band + animated-style gloss + prismatic gems
+      var rg = ctx.createLinearGradient(0, 0, W, H);
+      rg.addColorStop(0,'#ff6b6b'); rg.addColorStop(0.2,'#ffd93d'); rg.addColorStop(0.4,'#6bcb77');
+      rg.addColorStop(0.6,'#4dc9ff'); rg.addColorStop(0.8,'#4d6bff'); rg.addColorStop(1,'#b66dff');
+      ctx.lineWidth = 13;
+      ctx.strokeStyle = rg;
+      roundRect(ctx, 7, 7, W-14, H-14, 30);
+      ctx.stroke();
+      // holographic cross-sheen
+      var hs = ctx.createLinearGradient(W, 0, 0, H);
+      hs.addColorStop(0, 'rgba(255,255,255,0.4)');
+      hs.addColorStop(0.5, 'rgba(255,255,255,0)');
+      hs.addColorStop(1, 'rgba(255,255,255,0.35)');
+      ctx.lineWidth = 13;
+      ctx.strokeStyle = hs;
+      roundRect(ctx, 7, 7, W-14, H-14, 30);
+      ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      roundRect(ctx, 15, 15, W-30, H-30, 26);
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = ascended ? '#ffd27a' : 'rgba(255,255,255,0.85)';
+      roundRect(ctx, 19, 19, W-38, H-38, 23);
+      ctx.stroke();
+      cornerGems(ctx, '#ffffff', true);
+    } else {
+      // ── Mythic: Animated Cosmic Frame — flowing nebula hues + starfield
+      var shift = (t * 60) % 360;
+      var grad = ctx.createLinearGradient(0, 0, W, H);
+      for(var i = 0; i <= 6; i++){
+        grad.addColorStop(i/6, 'hsl(' + ((shift + i*60) % 360) + ', 85%, 62%)');
+      }
+      ctx.lineWidth = 13;
+      ctx.strokeStyle = grad;
+      ctx.shadowColor = 'hsl(' + shift + ', 90%, 65%)';
+      ctx.shadowBlur = 18;
+      roundRect(ctx, 7, 7, W-14, H-14, 30);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      roundRect(ctx, 15, 15, W-30, H-30, 26);
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = ascended ? '#ffd27a' : 'rgba(255,255,255,0.9)';
+      roundRect(ctx, 19, 19, W-38, H-38, 23);
+      ctx.stroke();
+      // orbiting star + twinkles on the frame
+      for(var s = 0; s < 18; s++){
+        var ang = (t * 0.4 + s * (Math.PI*2/18));
+        var px = W/2 + Math.cos(ang) * (W/2 - 12);
+        var py = H/2 + Math.sin(ang) * (H/2 - 12);
+        var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 3 + s * 1.7));
+        ctx.globalAlpha = tw;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.6 + tw * 1.4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      cornerGems(ctx, 'hsl(' + ((shift + 180) % 360) + ', 90%, 75%)', true);
+    }
+  }
+
+  // ═══════════ RARITY ART TREATMENT ═══════════
+  // Alters the card art to match its forged rarity — the foil treatment
+  // intensifies as rarity climbs.
+  function applyRarityArtFX(ctx, ax, ay, aw, ah, rarity, t){
+    t = t || 0;
+    if(rarity === 'Common'){
+      // subtle bronze patina
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = '#a8743f';
+      ctx.fillRect(ax, ay, aw, ah);
+    } else if(rarity === 'Uncommon'){
+      // cool silver tone
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = '#9fb3c8';
+      ctx.fillRect(ax, ay, aw, ah);
+    } else if(rarity === 'Rare'){
+      // warm golden glow from below
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.2;
+      var gg = ctx.createLinearGradient(0, ay+ah, 0, ay);
+      gg.addColorStop(0, '#ffd95e'); gg.addColorStop(1, 'rgba(255,217,94,0)');
+      ctx.fillStyle = gg;
+      ctx.fillRect(ax, ay, aw, ah);
+    } else if(rarity === 'Epic'){
+      // arcane purple energy radiating from center
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.28;
+      var pg = ctx.createRadialGradient(ax+aw/2, ay+ah/2, 10, ax+aw/2, ay+ah/2, ah*0.8);
+      pg.addColorStop(0, '#b9a6ff'); pg.addColorStop(1, '#46309e');
+      ctx.fillStyle = pg;
+      ctx.fillRect(ax, ay, aw, ah);
+    } else if(rarity === 'Legendary'){
+      // rainbow foil sheen sweeping diagonally across the art
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.3;
+      var rg2 = ctx.createLinearGradient(ax, ay, ax+aw, ay+ah);
+      rg2.addColorStop(0,'#ff6b6b'); rg2.addColorStop(0.25,'#ffd93d'); rg2.addColorStop(0.5,'#6bcb77');
+      rg2.addColorStop(0.75,'#4d96ff'); rg2.addColorStop(1,'#b66dff');
+      ctx.fillStyle = rg2;
+      ctx.fillRect(ax, ay, aw, ah);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.18;
+      var gl2 = ctx.createLinearGradient(ax, ay+ah, ax+aw, ay);
+      gl2.addColorStop(0, 'rgba(255,255,255,0)');
+      gl2.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+      gl2.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gl2;
+      ctx.fillRect(ax, ay, aw, ah);
+    } else if(rarity === 'Mythic'){
+      // animated cosmic aurora flowing over the art + drifting stars
+      var shift = (t * 50) % 360;
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.32;
+      var cg = ctx.createLinearGradient(ax, ay, ax+aw, ay+ah);
+      cg.addColorStop(0, 'hsl(' + shift + ', 85%, 60%)');
+      cg.addColorStop(0.5, 'hsl(' + ((shift+120)%360) + ', 85%, 55%)');
+      cg.addColorStop(1, 'hsl(' + ((shift+240)%360) + ', 85%, 60%)');
+      ctx.fillStyle = cg;
+      ctx.fillRect(ax, ay, aw, ah);
+      ctx.globalCompositeOperation = 'screen';
+      for(var s = 0; s < 16; s++){
+        var px = ax + ((hashStr('mx'+s) % 1000)/1000) * aw;
+        var py = ay + (((hashStr('my'+s) % 1000)/1000 + t*0.02*(1+s%3)) % 1) * ah;
+        var tw = 0.3 + 0.7 * Math.abs(Math.sin(t*2 + s));
+        ctx.globalAlpha = tw * 0.8;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.2 + tw, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
+  function wrapText(ctx, text, x, y, maxW, lineH, maxLines){
+    var words = (text || '').split(' ');
+    var line = '', lines = 0;
+    for(var i = 0; i < words.length; i++){
+      var test = line + words[i] + ' ';
+      if(ctx.measureText(test).width > maxW && line !== ''){
+        ctx.fillText(line.trim(), x, y);
+        line = words[i] + ' ';
+        y += lineH;
+        lines++;
+        if(maxLines && lines >= maxLines - 1){
+          var rest = words.slice(i).join(' ');
+          while(ctx.measureText(rest + '…').width > maxW && rest.length > 0) rest = rest.slice(0, -1);
+          ctx.fillText(rest + '…', x, y);
+          return y + lineH;
+        }
+      } else { line = test; }
+    }
+    ctx.fillText(line.trim(), x, y);
+    return y + lineH;
+  }
+
+  function drawCard(d, t){
+    var a = AFFINITIES[d.affinity] || AFFINITIES.Shadow;
+    var rc = RARITY_COLORS[d.rarity] || RARITY_COLORS.Common;
+    var ct = CARD_TYPES[d.cardType] || CARD_TYPES.Hero;
+    var cv = $('cardCanvas');
+    var ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    var bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, a.dark);
+    bg.addColorStop(0.5, a.mid);
+    bg.addColorStop(1, a.dark);
+    roundRect(ctx, 0, 0, W, H, 34);
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    frameStroke(ctx, d.rarity, t || 0, d.ascended);
+
+    // level orb
+    ctx.beginPath();
+    ctx.arc(72, 76, 32, 0, Math.PI*2);
+    ctx.fillStyle = d.ascended ? '#ffd27a' : rc;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.stroke();
+    ctx.fillStyle = '#0d0d12';
+    ctx.font = '700 30px Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(d.level), 72, 78);
+    ctx.font = '600 13px Segoe UI, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('LV', 72, 122);
+
+    // name / class / type
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 29px Segoe UI, sans-serif';
+    var name = d.displayName || 'Unknown';
+    while(ctx.measureText(name).width > 370 && name.length > 1) name = name.slice(0, -1);
+    ctx.fillText(name, 124, 62);
+    ctx.font = '400 17px Segoe UI, sans-serif';
+    ctx.fillStyle = d.ascended ? '#ffd27a' : a.pale;
+    ctx.fillText(ct.icon + ' ' + d.cardType + '  ·  ' + d.displayClass, 124, 92);
+
+    // rarity + frame name
+    ctx.textAlign = 'right';
+    ctx.font = '700 18px Segoe UI, sans-serif';
+    ctx.fillStyle = d.rarity === 'Legendary' ? '#ffd93d' : rc;
+    ctx.fillText(d.rarity.toUpperCase(), W-44, 56);
+    ctx.font = '400 12px Segoe UI, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(d.frameName + ' frame · ' + d.rarityScore + '/100', W-44, 78);
+    if(d.ascended){
+      ctx.fillStyle = '#ffd27a';
+      ctx.font = '600 13px Segoe UI, sans-serif';
+      ctx.fillText('★ ASCENDED', W-44, 98);
+    }
+
+    // art
+    var artSrc = (usedGeneratedArt && genImgEl) ? genImgEl : imgEl;
+    var ax = 40, ay = 136, aw = W-80, ah = 340;
+    ctx.save();
+    roundRect(ctx, ax, ay, aw, ah, 18);
+    ctx.clip();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(ax, ay, aw, ah);
+    if(artSrc && artSrc.complete && artSrc.naturalWidth > 0){
+      var ir = artSrc.naturalWidth / artSrc.naturalHeight;
+      var fr = aw / ah;
+      var dw, dh, dx, dy;
+      if(ir > fr){ dh = ah; dw = ah * ir; dx = ax - (dw - aw)/2; dy = ay; }
+      else { dw = aw; dh = aw / ir; dx = ax; dy = ay - (dh - ah)/2; }
+      ctx.drawImage(artSrc, dx, dy, dw, dh);
+      if(!usedGeneratedArt){
+        ctx.globalCompositeOperation = 'overlay';
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = a.mid;
+        ctx.fillRect(ax, ay, aw, ah);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+      }
+      // ★ rarity art treatment — alters the art to match the forged rarity
+      applyRarityArtFX(ctx, ax, ay, aw, ah, d.rarity, t || 0);
+      var vg = ctx.createRadialGradient(ax+aw/2, ay+ah/2, ah*0.35, ax+aw/2, ay+ah/2, ah*0.85);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(ax, ay, aw, ah);
+      var gl = ctx.createLinearGradient(0, ay+ah-70, 0, ay+ah);
+      gl.addColorStop(0, 'rgba(0,0,0,0)');
+      gl.addColorStop(1, a.mid);
+      ctx.fillStyle = gl;
+      ctx.fillRect(ax, ay+ah-70, aw, 70);
+    }
+    ctx.restore();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = d.ascended ? '#ffd27a' : a.light;
+    roundRect(ctx, ax, ay, aw, ah, 18);
+    ctx.stroke();
+
+    // badges on art
+    ctx.textAlign = 'left';
+    if(usedGeneratedArt){
+      ctx.font = '600 12px Segoe UI, sans-serif';
+      var tw1 = ctx.measureText('✦ FORGED ART').width + 18;
+      roundRect(ctx, ax+10, ay+10, tw1, 24, 12);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fill();
+      ctx.fillStyle = a.pale;
+      ctx.fillText('✦ FORGED ART', ax+19, ay+22);
+    }
+    if(!d.ownership || !d.ownership.verified){
+      ctx.font = '700 13px Segoe UI, sans-serif';
+      var tw2 = ctx.measureText('⚠ UNVERIFIED').width + 18;
+      roundRect(ctx, ax+aw-tw2-10, ay+10, tw2, 24, 12);
+      ctx.fillStyle = 'rgba(120,20,20,0.75)';
+      ctx.fill();
+      ctx.fillStyle = '#ffb3b3';
+      ctx.fillText('⚠ UNVERIFIED', ax+aw-tw2-1, ay+22);
+    }
+
+    // affinity banner
+    var by = ay + ah + 12;
+    roundRect(ctx, 40, by, W-80, 42, 12);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.font = '21px Segoe UI, sans-serif';
+    ctx.fillText(a.icon, 56, by+22);
+    ctx.font = '700 17px Segoe UI, sans-serif';
+    ctx.fillStyle = a.pale;
+    ctx.fillText(d.affinity, 90, by+22);
+    ctx.font = '400 12px Segoe UI, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText(a.theme, 90 + ctx.measureText(d.affinity).width + 60, by+22);
+    ctx.textAlign = 'right';
+    ctx.font = '600 12px Segoe UI, sans-serif';
+    var psW = ctx.measureText(a.playstyle).width + 22;
+    roundRect(ctx, W-52-psW, by+8, psW, 26, 13);
+    ctx.fillStyle = a.light;
+    ctx.fill();
+    ctx.fillStyle = a.dark;
+    ctx.fillText(a.playstyle, W-63, by+22);
+
+    // core stats
+    var sy = by + 56;
+    var stats = [
+      { v: d.power + '', m: '/10', l: 'POWER', c: a.pale },
+      { v: d.health + '', m: '/12', l: 'HEALTH', c: '#ff8d8d' },
+      { v: d.xpValue + '', m: ' XP', l: 'XP VALUE', c: '#ffd27a' }
+    ];
+    var sw = (W-80-20) / 3;
+    stats.forEach(function(s, i){
+      var sx = 40 + i*(sw+10);
+      roundRect(ctx, sx, sy, sw, 76, 14);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = s.c;
+      ctx.font = '700 34px Segoe UI, sans-serif';
+      ctx.fillText(s.v, sx+sw/2 - 12, sy+32);
+      ctx.font = '400 15px Segoe UI, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillText(s.m, sx+sw/2 + 12 + ctx.measureText(s.v).width/2, sy+34);
+      ctx.font = '600 11px Segoe UI, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillText(s.l, sx+sw/2, sy+58);
+    });
+
+    // lore
+    var ly = sy + 96;
+    ctx.textAlign = 'left';
+    ctx.font = 'italic 400 14px Georgia, serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ly = wrapText(ctx, '"' + (d.lore || '') + '"', 48, ly, W-96, 20, 2);
+
+    ly += 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(48, ly); ctx.lineTo(W-48, ly);
+    ctx.stroke();
+    ly += 18;
+
+    // abilities
+    var abs = [
+      { t: d.passiveUpgraded ? 'PASSIVE ★' : 'PASSIVE', d: d.passive, c: a.light, locked: false },
+      { t: 'ACTIVE', d: d.active, c: a.light, locked: false },
+      { t: d.ultimateUnlocked ? 'ULTIMATE' : 'ULTIMATE 🔒 LV 5', d: d.ultimate, c: '#ffb338', locked: !d.ultimateUnlocked }
+    ];
+    abs.forEach(function(ab){
+      ctx.globalAlpha = ab.locked ? 0.38 : 1;
+      ctx.beginPath();
+      ctx.arc(56, ly-5, 5, 0, Math.PI*2);
+      ctx.fillStyle = ab.c;
+      ctx.fill();
+      ctx.font = '700 15px Segoe UI, sans-serif';
+      ctx.fillStyle = ab.c;
+      ctx.fillText(ab.d.name, 72, ly);
+      var nw = ctx.measureText(ab.d.name).width;
+      ctx.font = '600 10px Segoe UI, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillText(ab.t, 72 + nw + 10, ly - 1);
+      ly += 19;
+      ctx.font = '400 12.5px Segoe UI, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ly = wrapText(ctx, ab.locked ? 'Sealed power awaits — evolve to Level 5.' : ab.d.description, 72, ly, W-130, 17, 2);
+      ly += 6;
+      ctx.globalAlpha = 1;
+    });
+
+    // collection bonus strip
+    if(d.collectionBonus){
+      ctx.font = '600 12px Segoe UI, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#97C459';
+      ctx.fillText('🤝 ' + d.collectionBonus.name + ': ', 48, ly);
+      var bw = ctx.measureText('🤝 ' + d.collectionBonus.name + ': ').width;
+      ctx.font = '400 12px Segoe UI, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      var bd = d.collectionBonus.desc;
+      while(ctx.measureText(bd).width > W - 96 - bw && bd.length > 0) bd = bd.slice(0, -1);
+      ctx.fillText(bd, 48 + bw, ly);
+    }
+
+    // footer with card ID
+    ctx.textAlign = 'center';
+    ctx.font = '600 12px Segoe UI, sans-serif';
+    ctx.fillStyle = d.ascended ? 'rgba(255,210,122,0.5)' : 'rgba(255,255,255,0.3)';
+    ctx.fillText((d.ascended ? '✦ S H I F T ✦' : 'S H I F T') + (d.ownership ? '  ·  ' + d.ownership.cardId : ''), W/2, H-26);
+  }
+
+  // ═══════════ DETAILS PANEL ═══════════
+  function esc(s){
+    var div = document.createElement('div');
+    div.textContent = s == null ? '' : String(s);
+    return div.innerHTML;
+  }
+
+  function renderDetails(d){
+    var a = AFFINITIES[d.affinity] || AFFINITIES.Shadow;
+    var rc = RARITY_COLORS[d.rarity];
+    var ct = CARD_TYPES[d.cardType] || CARD_TYPES.Hero;
+    var vt = (d.visualTraits || []).map(function(t){ return '<span class="vt">'+esc(t)+'</span>'; }).join('');
+    var nt = traits.filter(function(t){ return t.k && t.v; })
+      .map(function(t){ return '<span class="vt"><b>'+esc(t.k)+':</b> '+esc(t.v)+'</span>'; }).join('');
+    var pb = d.powerBonuses.length
+      ? d.powerBonuses.map(function(b){ return '<span class="btag" style="color:#97C459;border-color:#3B6D11;background:rgba(59,109,17,0.25)">+1 '+esc(b)+'</span>'; }).join('')
+      : '<span style="font-size:11px;color:var(--text-dim)">no trait bonuses</span>';
+    var hb = d.healthBonuses.length
+      ? d.healthBonuses.map(function(b){ return '<span class="btag" style="color:#85B7EB;border-color:#185FA5;background:rgba(24,95,165,0.25)">+1 '+esc(b)+'</span>'; }).join('')
+      : '<span style="font-size:11px;color:var(--text-dim)">no trait bonuses</span>';
+
+    var scanHtml = '';
+    if(d.forgeScan){
+      var hits = [];
+      d.forgeScan.affHits.forEach(function(h){ hits.push('<div><b>' + esc(h.label) + '</b> detected → adds <b>' + esc(h.aff) + ' Affinity</b></div>'); });
+      d.forgeScan.traitHits.forEach(function(h){ hits.push('<div><b>' + esc(h.label) + '</b> detected → adds <b>' + esc(h.trait) + '</b>: ' + esc(h.desc) + '</div>'); });
+      scanHtml = '<div class="dblock"><h3>Forge AI scan results</h3><div class="forge-hit">' + (hits.length ? hits.join('') : 'No keyword matches — affinity assigned by visual analysis.') + '</div></div>';
+    }
+
+    var collHtml = d.recognizedCollection
+      ? '<div class="dblock"><h3>Collection recognized — ' + esc(d.recognizedCollection.name) + '</h3><div class="forge-hit">' +
+        '<div>Class locked: <b>' + esc(d.recognizedCollection.lockClass) + '</b> · Affinity locked: <b>' + esc(d.recognizedCollection.lockAff) + '</b></div>' +
+        (d.collectionBonus ? '<div>Synergy: <b>' + esc(d.collectionBonus.name) + '</b> — ' + esc(d.collectionBonus.desc) + '</div>' : '') +
+        '</div></div>'
+      : '';
+
+    var own = d.ownership || {};
+    var ownJson = JSON.stringify({ wallet: own.wallet || 'not connected', nft: own.nft || '', cardId: own.cardId || '' }, null, 2);
+    var ownHtml =
+      '<div class="dblock"><h3>NFT ownership record</h3>' +
+      '<div class="forge-hit" style="margin-bottom:8px">Status: ' + (own.verified
+        ? '<b style="color:#2fbd8d">✓ Wallet connected (' + esc(own.chain) + ')</b> — production backend must verify on-chain ownership before minting.'
+        : '<b style="color:#f08080">⚠ UNVERIFIED</b> — no wallet connected. Connect a wallet so the card can be bound to its owner.') + '</div>' +
+      '<div class="code-block">' + esc(ownJson) + '</div></div>';
+
+    $('details').innerHTML =
+      '<div class="dblock"><h3>Forge output 1 — playable card</h3><div class="id-row">' +
+        '<span class="id-it">Name <b>'+esc(d.displayName)+'</b></span>' +
+        '<span class="id-it">Template <b>'+ct.icon+' '+esc(d.cardType)+'</b></span>' +
+        '<span class="id-it">Class <b>'+esc(d.displayClass)+'</b></span>' +
+        '<span class="id-it">Affinity <b>'+a.icon+' '+esc(d.affinity)+'</b></span>' +
+        '<span class="id-it">Level <b>'+d.level+'</b></span>' +
+        '<span class="id-it">Rarity <b style="color:'+rc+'">'+esc(d.rarity)+'</b> · '+esc(d.frameName)+' frame ('+d.rarityScore+'/100)</span>' +
+        (d.ascended ? '<span class="id-it">Form <b style="color:var(--gold)">★ '+esc(d.ascendedForm)+'</b></span>' : '') +
+      '</div></div>' +
+
+      '<div class="dblock"><h3>Stat formulas</h3><div class="sf-grid">' +
+        '<div class="sf-box"><div class="sf-val" style="color:'+a.light+'">'+d.power+'</div><div class="sf-lbl">Power / 10</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.powerBase+'<br>'+pb+'</div></div>' +
+        '<div class="sf-box"><div class="sf-val" style="color:#ff8d8d">'+d.health+'</div><div class="sf-lbl">Health / 12</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.healthBase+'<br>'+hb+'</div></div>' +
+        '<div class="sf-box"><div class="sf-val" style="color:#ffd27a">'+d.xpValue+'</div><div class="sf-lbl">XP Value</div><div class="sf-bd">Level '+d.level+' defeat reward</div></div>' +
+      '</div></div>' +
+
+      scanHtml + collHtml +
+
+      '<div class="dblock"><h3>Abilities — drawn from the '+esc(d.affinity)+' pool</h3>' +
+        '<div class="ab-it" style="border-left-color:'+a.light+'"><div class="ab-tp">Passive'+(d.passiveUpgraded?' <span style="color:var(--gold)">★ upgraded (Lv 3)</span>':'')+'</div><div class="ab-nm">'+esc(d.passive.name)+'</div><div class="ab-ds">'+esc(d.passive.description)+(d.passiveUpgraded?' <b style="color:var(--gold)">Effect doubled.</b>':'')+'</div></div>' +
+        '<div class="ab-it" style="border-left-color:'+a.light+'"><div class="ab-tp">Active</div><div class="ab-nm">'+esc(d.active.name)+'</div><div class="ab-ds">'+esc(d.active.description)+'</div></div>' +
+        '<div class="ab-it'+(d.ultimateUnlocked?'':' locked')+'" style="border-left-color:#ffb338"><div class="ab-tp" style="color:#ffb338">Ultimate'+(d.ultimateUnlocked?'':' 🔒 unlocks at Lv 5')+'</div><div class="ab-nm">'+esc(d.ultimate.name)+'</div><div class="ab-ds">'+esc(d.ultimate.description)+'</div></div>' +
+      '</div>' +
+
+      ownHtml +
+
+      '<div class="dblock"><h3>Forge output 2 — artwork</h3><div class="forge-hit">' +
+        '<div>Original NFT: <b>preserved</b></div>' +
+        '<div>Card art: <b>' + (usedGeneratedArt ? 'enhanced SHIFT fantasy upgrade ✦' : 'original with affinity styling') + '</b></div>' +
+        '<div>Rarity treatment: <b>' + ({Common:'Bronze patina',Uncommon:'Silver tone',Rare:'Golden glow',Epic:'Arcane purple radiance',Legendary:'Rainbow foil sheen',Mythic:'Animated cosmic aurora ✦'})[d.rarity] + '</b></div>' +
+      '</div></div>' +
+
+      '<div class="dblock"><h3>Forge output 3 — lore entry</h3><div class="lore-block">"'+esc(d.lore)+'"</div></div>' +
+
+      (d.artPromptUsed ? '<div class="dblock"><h3>Art prompt used</h3><div style="font-size:12px;color:var(--text-dim);line-height:1.6">'+esc(d.artPromptUsed)+'</div></div>' : '') +
+      (vt || nt ? '<div class="dblock"><h3>Visual traits</h3><div class="vt-wrap">'+vt+nt+'</div></div>' : '');
+  }
+
+  // ═══════════ DOWNLOADS ═══════════
+  $('dlPngBtn').addEventListener('click', function(){
+    if(!cardData) return;
+    var v = evolvedView(cardData, evoLevel);
+    var link = document.createElement('a');
+    link.download = 'shift-' + (v.displayName || 'card').replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-lv' + evoLevel + '.png';
+    link.href = $('cardCanvas').toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  $('dlJsonBtn').addEventListener('click', function(){
+    if(!cardData) return;
+    var v = evolvedView(cardData, evoLevel);
+    var out = {};
+    Object.keys(v).forEach(function(k){ if(k !== 'forgeScan' && k !== 'recognizedCollection') out[k] = v[k]; });
+    var aff = AFFINITIES[v.affinity];
+    out.affinityTheme = aff.theme;
+    out.affinityPlaystyle = aff.playstyle;
+    out.frame = FRAME_NAMES[v.rarity];
+    out.recognizedCollection = cardData.recognizedCollection ? cardData.recognizedCollection.name : null;
+    out.forgeKeywordHits = cardData.forgeScan ? cardData.forgeScan.affHits.concat(cardData.forgeScan.traitHits) : [];
+    out.artSource = usedGeneratedArt ? 'ai-generated' : 'original-nft';
+    out.rarityArtTreatment = ({Common:'bronze-patina',Uncommon:'silver-tone',Rare:'golden-glow',Epic:'arcane-purple-radiance',Legendary:'rainbow-foil-sheen',Mythic:'animated-cosmic-aurora'})[v.rarity];
+    out.walletProvider = wallet ? (wallet.provider || null) : null;
+    out.nftName = $('tokenName').value;
+    out.collection = $('collection').value;
+    out.nftTraits = {};
+    traits.filter(function(t){ return t.k && t.v; }).forEach(function(t){ out.nftTraits[t.k] = t.v; });
+    var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'shift-' + (v.displayName || 'card').replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-lv' + evoLevel + '.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+
+  // ═══════════ INIT ═══════════
+  addTrait('', '');
+  addTrait('', '');
+  checkReady();
+})();
+</script>
+</body>
+</html>

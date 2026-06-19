@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "c7a3e1d0-4f2b-4e8a-9c1d-5a6b7c8d9e0f",
+  "printId": "d8b4f2e1-5a3c-4f9b-0d2e-6b7c8d9e0f1a",
+  "name": "Kael, The Emberblade",
+  "slug": "kael-the-emberblade",
+  "cardType": "hero",
+  "affinity": "flame",
+  "rarity": "legendary",
+  "rulesText": "Kael channels the fury of the eternal flame. Each level gained ignites new destructive potential. At max level, Kael transcends mortal form — becoming a living inferno that scorches all who oppose him.",
+  "flavorText": "\"The fire does not consume me. I am the fire.\" — Kael, upon his Ascension at the Crucible of Embers",
+  "keywords": ["haste", "lifesteal"],
+  "stats": {
+    "attack": 5,
+    "defense": 3,
+    "hp": 8
+  },
+  "heroData": {
+    "baseLevel": 1,
+    "maxLevel": 5,
+    "baseAbilities": [
+      {
+        "id": "a1000001-0001-4000-a000-000000000001",
+        "name": "Ember Strike",
+        "type": "activated",
+        "description": "Deal 2 extra fire damage to the target monster. This damage ignores defense modifiers from frost affinity.",
+        "cost": {
+          "tap": true
+        },
+        "cooldown": 0,
+        "keywords": ["fire_damage"]
+      }
+    ],
+    "levelProgression": [
+      {
+        "level": 2,
+        "xpRequired": 50,
+        "statsBonus": {
+          "attack": 1
+        },
+        "abilitiesUnlocked": [
+          {
+            "id": "a1000001-0001-4000-a000-000000000002",
+            "name": "Flame Shield",
+            "type": "passive",
+            "description": "Kael takes 1 less damage from all sources. If the attacker has frost affinity, Flame Shield absorbs an additional 1 damage.",
+            "keywords": ["damage_reduction", "anti_frost"]
+          }
+        ]
+      },
+      {
+        "level": 3,
+        "xpRequired": 150,
+        "statsBonus": {
+          "defense": 1,
+          "hp": 2
+        },
+        "abilitiesUnlocked": [
+          {
+            "id": "a1000001-0001-4000-a000-000000000003",
+            "name": "Inferno Burst",
+            "type": "activated",
+            "description": "Deal 4 fire damage split among all enemy monsters currently in the encounter. Kael cannot attack this turn.",
+            "cost": {
+              "tap": true,
+              "hp": 2
+            },
+            "cooldown": 2,
+            "keywords": ["area_damage", "fire_damage"]
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "xpRequired": 300,
+        "statsBonus": {
+          "attack": 2
+        },
+        "abilitiesUnlocked": [
+          {
+            "id": "a1000001-0001-4000-a000-000000000004",
+            "name": "Phoenix Stance",
+            "type": "triggered",
+            "description": "When Kael's HP drops to 0 for the first time in an encounter, he is restored to 3 HP and gains +2 attack until the encounter ends. This ability can only trigger once per game.",
+            "keywords": ["revival", "last_stand"]
+          }
+        ]
+      },
+      {
+        "level": 5,
+        "xpRequired": 500,
+        "statsBonus": {
+          "attack": 2,
+          "defense": 2,
+          "hp": 3
+        },
+        "abilitiesUnlocked": [
+          {
+            "id": "a1000001-0001-4000-a000-000000000005",
+            "name": "Emberblade Ascension",
+            "type": "activated",
+            "description": "Kael becomes an Avatar of Flame for the remainder of the encounter. All his attacks deal double damage, and he is immune to SHIFT spells of the frost and shadow affinities. Sacrifice 1 equipped artifact to activate.",
+            "cost": {
+              "custom": "Sacrifice 1 equipped artifact"
+            },
+            "cooldown": 0,
+            "keywords": ["ultimate", "transformation", "double_damage"]
+          }
+        ]
+      }
+    ]
+  },
+  "set": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "code": "GEN",
+    "name": "Genesis"
+  },
+  "collectorNumber": "001/250",
+  "artist": "Elena Darkweaver",
+  "images": {
+    "thumbnail": "https://assets.shiftcardgame.com/cards/GEN/001/thumbnail.png",
+    "small": "https://assets.shiftcardgame.com/cards/GEN/001/small.png",
+    "medium": "https://assets.shiftcardgame.com/cards/GEN/001/medium.png",
+    "large": "https://assets.shiftcardgame.com/cards/GEN/001/large.png",
+    "fullArt": "https://assets.shiftcardgame.com/cards/GEN/001/full-art.png",
+    "ipfsHash": "QmYwAPJzv5CZsnAzt8auVTLm38a1aRN2mWzjN1JNkdYqMA"
+  },
+  "animation": {
+    "url": "https://assets.shiftcardgame.com/cards/GEN/001/animation.mp4",
+    "type": "video/mp4",
+    "ipfsHash": "QmT5NvUtoM5nWFfrQdVrFtvGfKFmG7AHE8P34isapyhCxX"
+  },
+  "edition": {
+    "name": "1st Edition",
+    "printRun": 5000,
+    "printNumber": 1,
+    "finish": "holographic"
+  },
+  "nft": {
+    "chain": "solana",
+    "mintAddress": "7EcDhSYGx1Fg1E1PBjStZ5FkK9Lj6JfWyPD1MzXQ9jKx",
+    "tokenStandard": "metaplex",
+    "metadataUri": "https://arweave.net/abc123def456",
+    "collection": {
+      "address": "GEN1co11ect10nM1ntAddre55000000000000000000",
+      "verified": true
+    },
+    "sellerFeeBasisPoints": 500,
+    "creators": [
+      {
+        "address": "SH1FTcr3at0r1111111111111111111111111111111",
+        "share": 100,
+        "verified": true
+      }
+    ],
+    "mintedAt": "2026-09-01T00:00:00Z"
+  },
+  "provenance": [
+    {
+      "event": "minted",
+      "to": "SH1FTcr3at0r1111111111111111111111111111111",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "txSignature": "5KtPn1LGuxhFiwjxErkxTb3AX8PMAMBo1Hv85G8bRFcYvMNjEW7Y3FBvTdPz"
+    }
+  ],
+  "legality": {
+    "standard": "legal",
+    "legacy": "legal",
+    "draft": "legal"
+  },
+  "deckLimits": {
+    "maxCopies": 1
+  },
+  "createdAt": "2026-06-11T00:00:00Z",
+  "updatedAt": "2026-06-11T00:00:00Z",
+  "tags": ["starter", "flagship", "flame_hero"]
+}

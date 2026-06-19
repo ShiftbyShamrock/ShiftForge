@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+  "printId": "e3d4f5a6-b7c8-4d9e-0f1a-2b3c4d5e6f7a",
+  "name": "Dreadmaw Lurker",
+  "slug": "dreadmaw-lurker",
+  "cardType": "monster",
+  "affinity": "shadow",
+  "rarity": "rare",
+  "rulesText": "Lurking in the space between shadows, the Dreadmaw strikes with terrifying speed. Its Fear Aura weakens nearby heroes, reducing their attack power. Defeating it yields significant XP and a chance at rare shadow-infused loot.",
+  "flavorText": "\"We lost three scouts before we realized it wasn't hiding in the dark — it WAS the dark.\" — Captain Voss, Frontier Report #47",
+  "keywords": ["ambush", "fear"],
+  "stats": {
+    "attack": 6,
+    "defense": 2,
+    "hp": 10
+  },
+  "monsterData": {
+    "xpReward": 75,
+    "threatLevel": 4,
+    "abilities": [
+      {
+        "id": "a2000001-0001-4000-b000-000000000001",
+        "name": "Shadow Bite",
+        "type": "activated",
+        "description": "The Dreadmaw lunges from the shadows, dealing ATK + 2 damage to the target hero. If this is the Dreadmaw's first action in the encounter, deal ATK + 4 damage instead (ambush bonus).",
+        "cooldown": 1,
+        "keywords": ["ambush", "shadow_damage"]
+      },
+      {
+        "id": "a2000001-0001-4000-b000-000000000002",
+        "name": "Fear Aura",
+        "type": "passive",
+        "description": "All heroes in the encounter have their attack reduced by 1 while the Dreadmaw Lurker is alive. Heroes with the divine affinity are immune to this effect.",
+        "keywords": ["debuff", "aura", "fear"]
+      }
+    ],
+    "lootTable": [
+      {
+        "artifactId": "f5e6d7c8-b9a0-4123-4567-89abcdef0123",
+        "dropRate": 0.25
+      },
+      {
+        "artifactId": "a9b8c7d6-e5f4-4321-0987-654321fedcba",
+        "dropRate": 0.08
+      }
+    ]
+  },
+  "set": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "code": "GEN",
+    "name": "Genesis"
+  },
+  "collectorNumber": "087/250",
+  "artist": "Marcus Ironhand",
+  "images": {
+    "thumbnail": "https://assets.shiftcardgame.com/cards/GEN/087/thumbnail.png",
+    "small": "https://assets.shiftcardgame.com/cards/GEN/087/small.png",
+    "medium": "https://assets.shiftcardgame.com/cards/GEN/087/medium.png",
+    "large": "https://assets.shiftcardgame.com/cards/GEN/087/large.png",
+    "fullArt": "https://assets.shiftcardgame.com/cards/GEN/087/full-art.png",
+    "ipfsHash": "QmV5bL2gEjTCNpWvZkVfK8P9mX3rQ6tD7yA1hN4sU2wE8x"
+  },
+  "edition": {
+    "name": "1st Edition",
+    "printRun": 5000,
+    "printNumber": 412,
+    "finish": "standard"
+  },
+  "nft": {
+    "chain": "solana"
+  },
+  "legality": {
+    "standard": "legal",
+    "legacy": "legal",
+    "draft": "legal"
+  },
+  "deckLimits": {
+    "maxCopies": 3
+  },
+  "createdAt": "2026-06-11T00:00:00Z",
+  "updatedAt": "2026-06-11T00:00:00Z",
+  "tags": ["shadow", "mid_tier", "fear_mechanic"]
+}

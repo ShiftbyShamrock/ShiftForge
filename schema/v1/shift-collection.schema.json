@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shiftcardgame.com/schema/v1/shift-collection.schema.json",
+  "title": "SHIFT Card Collection",
+  "description": "A collection/set of SHIFT cards with set-level metadata. Used to package and distribute complete sets.",
+  "type": "object",
+
+  "required": ["schemaVersion", "collection", "cards"],
+
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version identifier."
+    },
+
+    "collection": {
+      "type": "object",
+      "description": "Set-level metadata for this card collection.",
+      "required": ["id", "code", "name", "releaseDate", "totalCards"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique collection identifier."
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9]{3,6}$",
+          "description": "Short set code (e.g. 'SHF01')."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full collection name (e.g. 'Genesis')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Narrative description of the collection/set."
+        },
+        "releaseDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Official release date (YYYY-MM-DD)."
+        },
+        "totalCards": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total number of unique cards in this collection."
+        },
+        "symbol": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to the set symbol/icon image."
+        },
+        "affinityDistribution": {
+          "type": "object",
+          "description": "Breakdown of how many cards per affinity in this set.",
+          "patternProperties": {
+            "^(fortune|shadow|nature|flame|frost|storm|arcane|rift|divine|machine)$": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "cardTypeDistribution": {
+          "type": "object",
+          "description": "Breakdown of how many cards per type in this set.",
+          "properties": {
+            "hero": { "type": "integer", "minimum": 0 },
+            "monster": { "type": "integer", "minimum": 0 },
+            "artifact": { "type": "integer", "minimum": 0 },
+            "shift_spell": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "cards": {
+      "type": "array",
+      "description": "Array of SHIFT cards in this collection.",
+      "items": {
+        "$ref": "shift-card.schema.json"
+      },
+      "minItems": 1
+    }
+  },
+
+  "additionalProperties": false
+}

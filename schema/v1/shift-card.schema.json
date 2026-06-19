@@ -1,0 +1,761 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shiftcardgame.com/schema/v1/shift-card.schema.json",
+  "title": "SHIFT Card",
+  "description": "Universal card format for the SHIFT Card Game ecosystem v1.0. Consumed by the NFT Forge, Tabletop Simulator, online game, mobile app, tournament system, and NFT minting pipeline.",
+  "type": "object",
+
+  "required": [
+    "schemaVersion",
+    "id",
+    "printId",
+    "name",
+    "slug",
+    "cardType",
+    "rarity",
+    "rulesText",
+    "set",
+    "collectorNumber",
+    "images",
+    "createdAt",
+    "updatedAt"
+  ],
+
+  "properties": {
+
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version identifier. Locked to 1.0.0 for this release."
+    },
+
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Canonical card identity UUID. Remains the same across reprints and editions."
+    },
+
+    "printId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this specific print/edition of the card."
+    },
+
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Display name of the card."
+    },
+
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "URL-safe identifier derived from the name (e.g. 'shadow-knight')."
+    },
+
+    "cardType": {
+      "type": "string",
+      "enum": ["hero", "monster", "artifact", "shift_spell"],
+      "description": "Primary card type. Determines which type-specific data block is required."
+    },
+
+    "affinity": {
+      "type": "string",
+      "enum": [
+        "fortune",
+        "shadow",
+        "nature",
+        "flame",
+        "frost",
+        "storm",
+        "arcane",
+        "rift",
+        "divine",
+        "machine"
+      ],
+      "description": "The card's elemental/thematic affinity."
+    },
+
+    "rarity": {
+      "type": "string",
+      "enum": ["common", "uncommon", "rare", "epic", "legendary", "mythic"],
+      "description": "Card rarity tier."
+    },
+
+    "rulesText": {
+      "type": "string",
+      "description": "Full rules/oracle text describing the card's in-game effect."
+    },
+
+    "flavorText": {
+      "type": "string",
+      "description": "Lore or flavor text (not mechanically relevant)."
+    },
+
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Keyword abilities or tags (e.g. ['haste', 'shield', 'lifesteal'])."
+    },
+
+    "stats": {
+      "$ref": "#/$defs/combatStats",
+      "description": "Base combat stats. Required for hero and monster cards."
+    },
+
+    "heroData": {
+      "$ref": "#/$defs/heroData",
+      "description": "Hero-specific data including XP thresholds and level progression. Required when cardType is 'hero'."
+    },
+
+    "monsterData": {
+      "$ref": "#/$defs/monsterData",
+      "description": "Monster-specific data including XP reward and threat level. Required when cardType is 'monster'."
+    },
+
+    "artifactData": {
+      "$ref": "#/$defs/artifactData",
+      "description": "Artifact-specific data including equipment type and stat modifiers. Required when cardType is 'artifact'."
+    },
+
+    "shiftData": {
+      "$ref": "#/$defs/shiftData",
+      "description": "SHIFT Spell-specific data including category and effect. Required when cardType is 'shift_spell'."
+    },
+
+    "set": {
+      "type": "object",
+      "description": "The set/collection this card belongs to.",
+      "required": ["id", "code", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Set unique identifier."
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9]{3,6}$",
+          "description": "Short set code (e.g. 'SHF01', 'GEN')."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full set name (e.g. 'Genesis')."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "collectorNumber": {
+      "type": "string",
+      "pattern": "^[0-9]{1,4}(/[0-9]{1,4})?$",
+      "description": "Collector number within the set (e.g. '042' or '042/250')."
+    },
+
+    "artist": {
+      "type": "string",
+      "description": "Name of the card's illustrator."
+    },
+
+    "images": {
+      "type": "object",
+      "description": "Card art assets at multiple resolutions.",
+      "required": ["medium"],
+      "properties": {
+        "thumbnail": {
+          "type": "string",
+          "format": "uri",
+          "description": "Small thumbnail (≤128px). For lists and search results."
+        },
+        "small": {
+          "type": "string",
+          "format": "uri",
+          "description": "Small image (≤256px). For hand views and mobile."
+        },
+        "medium": {
+          "type": "string",
+          "format": "uri",
+          "description": "Medium image (≤512px). Primary display size."
+        },
+        "large": {
+          "type": "string",
+          "format": "uri",
+          "description": "Large image (≤1024px). For detail views."
+        },
+        "fullArt": {
+          "type": "string",
+          "format": "uri",
+          "description": "Full resolution art file. For printing and NFT."
+        },
+        "ipfsHash": {
+          "type": "string",
+          "description": "IPFS CID of the canonical art file for permanence."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "animation": {
+      "type": "object",
+      "description": "Animated or 3D asset for enhanced NFT display.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI to the animation file."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["video/mp4", "video/webm", "image/gif", "model/gltf-binary", "text/html"],
+          "description": "MIME type of the animation."
+        },
+        "ipfsHash": {
+          "type": "string",
+          "description": "IPFS CID of the animation file."
+        }
+      },
+      "required": ["url", "type"],
+      "additionalProperties": false
+    },
+
+    "edition": {
+      "type": "object",
+      "description": "Print edition and finish information.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Edition name (e.g. '1st Edition', 'Unlimited')."
+        },
+        "printRun": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total number of cards in this print run."
+        },
+        "printNumber": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "This card's number within the print run."
+        },
+        "finish": {
+          "type": "string",
+          "enum": ["standard", "holographic", "foil", "alternate_art", "full_art", "secret_rare"],
+          "description": "Card finish/treatment."
+        }
+      },
+      "required": ["name", "finish"],
+      "additionalProperties": false
+    },
+
+    "nft": {
+      "type": "object",
+      "description": "NFT/blockchain metadata. Targeting Solana with Metaplex standard.",
+      "properties": {
+        "chain": {
+          "type": "string",
+          "enum": ["solana"],
+          "description": "Blockchain network."
+        },
+        "mintAddress": {
+          "type": "string",
+          "description": "Solana mint address (base58-encoded public key)."
+        },
+        "tokenStandard": {
+          "type": "string",
+          "enum": ["metaplex", "metaplex_core", "programmable_nft"],
+          "description": "Solana token standard used."
+        },
+        "metadataUri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI to the on-chain metadata JSON (Arweave or IPFS)."
+        },
+        "collection": {
+          "type": "object",
+          "description": "Metaplex collection group.",
+          "properties": {
+            "address": {
+              "type": "string",
+              "description": "Collection mint address."
+            },
+            "verified": {
+              "type": "boolean",
+              "description": "Whether the collection is verified on-chain."
+            }
+          },
+          "additionalProperties": false
+        },
+        "sellerFeeBasisPoints": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "description": "Royalty fee in basis points (e.g. 500 = 5%)."
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string",
+                "description": "Creator's Solana wallet address."
+              },
+              "share": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Percentage share of royalties."
+              },
+              "verified": {
+                "type": "boolean",
+                "description": "Whether this creator is verified on-chain."
+              }
+            },
+            "required": ["address", "share"],
+            "additionalProperties": false
+          },
+          "description": "Array of creator addresses and their royalty shares."
+        },
+        "mintedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of when the NFT was minted."
+        }
+      },
+      "required": ["chain"],
+      "additionalProperties": false
+    },
+
+    "provenance": {
+      "type": "array",
+      "description": "Ownership and transaction history for the NFT.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": ["minted", "transferred", "listed", "sold", "burned", "staked"],
+            "description": "Type of provenance event."
+          },
+          "from": {
+            "type": "string",
+            "description": "Sender wallet address (null for mint events)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Receiver wallet address."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event occurred."
+          },
+          "txSignature": {
+            "type": "string",
+            "description": "Solana transaction signature."
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "amount": { "type": "number", "minimum": 0 },
+              "currency": { "type": "string", "enum": ["SOL", "USDC"] }
+            },
+            "description": "Sale price if applicable.",
+            "additionalProperties": false
+          }
+        },
+        "required": ["event", "timestamp"],
+        "additionalProperties": false
+      }
+    },
+
+    "legality": {
+      "type": "object",
+      "description": "Format legality for tournament play.",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "string",
+          "enum": ["legal", "banned", "restricted", "not_legal"]
+        }
+      },
+      "additionalProperties": false,
+      "examples": [
+        { "standard": "legal", "legacy": "legal", "draft": "restricted" }
+      ]
+    },
+
+    "deckLimits": {
+      "type": "object",
+      "description": "Deck construction constraints.",
+      "properties": {
+        "maxCopies": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum copies allowed in a deck."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of card creation."
+    },
+
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last modification."
+    },
+
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Internal tags for search and filtering."
+    },
+
+    "meta": {
+      "type": "object",
+      "description": "Open extension object for platform-specific or future metadata.",
+      "additionalProperties": true
+    }
+  },
+
+  "allOf": [
+    {
+      "if": {
+        "properties": { "cardType": { "const": "hero" } },
+        "required": ["cardType"]
+      },
+      "then": {
+        "required": ["stats", "heroData", "affinity"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "cardType": { "const": "monster" } },
+        "required": ["cardType"]
+      },
+      "then": {
+        "required": ["stats", "monsterData"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "cardType": { "const": "artifact" } },
+        "required": ["cardType"]
+      },
+      "then": {
+        "required": ["artifactData"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "cardType": { "const": "shift_spell" } },
+        "required": ["cardType"]
+      },
+      "then": {
+        "required": ["shiftData"]
+      }
+    }
+  ],
+
+  "additionalProperties": false,
+
+  "$defs": {
+
+    "combatStats": {
+      "type": "object",
+      "title": "Combat Stats",
+      "description": "Base combat statistics for heroes and monsters.",
+      "required": ["attack", "defense", "hp"],
+      "properties": {
+        "attack": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Base attack power."
+        },
+        "defense": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Base defense value."
+        },
+        "hp": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Base hit points."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "statModifiers": {
+      "type": "object",
+      "title": "Stat Modifiers",
+      "description": "Additive stat modifiers (can be negative for debuffs).",
+      "properties": {
+        "attack": { "type": "integer", "description": "Attack modifier." },
+        "defense": { "type": "integer", "description": "Defense modifier." },
+        "hp": { "type": "integer", "description": "HP modifier." }
+      },
+      "additionalProperties": false
+    },
+
+    "ability": {
+      "type": "object",
+      "title": "Ability",
+      "description": "A card ability that can be passive, activated, or triggered.",
+      "required": ["name", "type", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique ability identifier for cross-referencing."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Ability display name."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["passive", "activated", "triggered"],
+          "description": "How the ability is invoked: passive (always on), activated (player chooses), triggered (conditional)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Full rules text of the ability."
+        },
+        "cost": {
+          "type": "object",
+          "description": "Cost to activate (if activated ability).",
+          "properties": {
+            "hp": { "type": "integer", "minimum": 0, "description": "HP cost." },
+            "xp": { "type": "integer", "minimum": 0, "description": "XP cost." },
+            "discard": { "type": "integer", "minimum": 0, "description": "Number of cards to discard." },
+            "tap": { "type": "boolean", "description": "Whether the card must be tapped/exhausted." },
+            "custom": { "type": "string", "description": "Any other cost described in text." }
+          },
+          "additionalProperties": false
+        },
+        "cooldown": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of turns before the ability can be used again."
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keyword tags for this ability."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "heroData": {
+      "type": "object",
+      "title": "Hero Data",
+      "description": "Hero-specific progression and ability data. Heroes gain XP from defeating monsters and level up to unlock stronger abilities.",
+      "required": ["baseLevel", "maxLevel", "levelProgression"],
+      "properties": {
+        "baseLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Starting level of the hero."
+        },
+        "maxLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum achievable level."
+        },
+        "baseAbilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ability" },
+          "description": "Abilities available at base level."
+        },
+        "levelProgression": {
+          "type": "array",
+          "description": "Ordered list of level-up thresholds and rewards.",
+          "items": {
+            "type": "object",
+            "required": ["level", "xpRequired"],
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 2,
+                "description": "The level this entry unlocks."
+              },
+              "xpRequired": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Cumulative XP needed to reach this level."
+              },
+              "statsBonus": {
+                "$ref": "#/$defs/statModifiers",
+                "description": "Stat increases granted at this level."
+              },
+              "abilitiesUnlocked": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/ability" },
+                "description": "New abilities unlocked at this level."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "monsterData": {
+      "type": "object",
+      "title": "Monster Data",
+      "description": "Monster-specific encounter data. Monsters are defeated by heroes to earn XP.",
+      "required": ["xpReward", "threatLevel"],
+      "properties": {
+        "xpReward": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "XP granted to the hero who defeats this monster."
+        },
+        "threatLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Encounter difficulty rating (1 = trivial, 10 = world-ending)."
+        },
+        "abilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ability" },
+          "description": "Abilities the monster can use during encounters."
+        },
+        "lootTable": {
+          "type": "array",
+          "description": "Possible artifact drops after defeating this monster.",
+          "items": {
+            "type": "object",
+            "required": ["artifactId", "dropRate"],
+            "properties": {
+              "artifactId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "ID of the artifact that may drop."
+              },
+              "dropRate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Probability of dropping (0.0 to 1.0)."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "artifactData": {
+      "type": "object",
+      "title": "Artifact Data",
+      "description": "Artifact/item data. Artifacts can be equipped by heroes to modify stats or grant effects.",
+      "required": ["artifactType"],
+      "properties": {
+        "artifactType": {
+          "type": "string",
+          "enum": ["weapon", "armor", "accessory", "consumable", "quest_item"],
+          "description": "Category of artifact."
+        },
+        "statModifiers": {
+          "$ref": "#/$defs/statModifiers",
+          "description": "Stat changes when this artifact is equipped."
+        },
+        "effect": {
+          "type": "string",
+          "description": "Special effect text when used or equipped."
+        },
+        "durability": {
+          "type": "integer",
+          "minimum": -1,
+          "description": "Number of uses before the artifact is consumed. -1 = indestructible."
+        },
+        "equipRestrictions": {
+          "type": "object",
+          "description": "Requirements to equip or use this artifact.",
+          "properties": {
+            "minLevel": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Minimum hero level required."
+            },
+            "requiredAffinity": {
+              "type": "string",
+              "enum": [
+                "fortune", "shadow", "nature", "flame", "frost",
+                "storm", "arcane", "rift", "divine", "machine"
+              ],
+              "description": "Hero must have this affinity to equip."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "shiftData": {
+      "type": "object",
+      "title": "SHIFT Spell Data",
+      "description": "SHIFT Spell data. SHIFT cards override standard rules and create unpredictable, game-altering outcomes.",
+      "required": ["shiftCategory", "effect"],
+      "properties": {
+        "shiftCategory": {
+          "type": "string",
+          "enum": [
+            "enchanter",
+            "chaos_chain",
+            "political_group",
+            "deck_manipulation",
+            "xp_power",
+            "ultra_shift"
+          ],
+          "description": "The SHIFT spell category: enchanter (buffs/enchantments), chaos_chain (chain reactions/random effects), political_group (multiplayer politics/alliances), deck_manipulation (draw/discard/shuffle), xp_power (XP gain/steal/manipulation), ultra_shift (ultimate game-breaking effects)."
+        },
+        "effect": {
+          "type": "string",
+          "description": "Full description of the SHIFT spell's rule-overriding effect."
+        },
+        "duration": {
+          "type": "string",
+          "enum": ["instant", "persistent", "until_end_of_turn", "until_triggered"],
+          "description": "How long the SHIFT effect lasts."
+        },
+        "targetType": {
+          "type": "string",
+          "enum": [
+            "self",
+            "single_opponent",
+            "all_opponents",
+            "single_hero",
+            "single_monster",
+            "all_creatures",
+            "global"
+          ],
+          "description": "What the SHIFT spell can target."
+        },
+        "chainable": {
+          "type": "boolean",
+          "description": "Whether this SHIFT spell can trigger or be triggered by other SHIFT spells."
+        },
+        "counterplay": {
+          "type": "string",
+          "description": "How opponents can counter or respond to this SHIFT spell."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

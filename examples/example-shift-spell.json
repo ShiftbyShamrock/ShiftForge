@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0.0",
+  "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
+  "printId": "a5b6c7d8-e9f0-4123-4567-89abcdef0123",
+  "name": "Reality Fracture",
+  "slug": "reality-fracture",
+  "cardType": "shift_spell",
+  "affinity": "rift",
+  "rarity": "mythic",
+  "rulesText": "SHIFT — ULTRA SHIFT: Tear open a rift in reality. All players must shuffle their hands into their decks and draw the same number of cards. All monsters on the field swap their ATK and DEF values. This effect cannot be countered. \"When the rift opens, even the rules bow to chaos.\"",
+  "flavorText": "The scholars called it impossible. The Riftwalkers called it Tuesday.",
+  "keywords": ["uncounterable", "mass_effect"],
+  "shiftData": {
+    "shiftCategory": "ultra_shift",
+    "effect": "All players shuffle their hands into their decks and draw the same number of cards they had before. All monsters currently on the field swap their ATK and DEF values for the remainder of the encounter. These effects resolve simultaneously and cannot be countered, redirected, or negated by any means.",
+    "duration": "instant",
+    "targetType": "global",
+    "chainable": false,
+    "counterplay": "This spell cannot be countered. However, heroes with the arcane affinity may choose to keep 1 card from their hand before shuffling."
+  },
+  "set": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "code": "GEN",
+    "name": "Genesis"
+  },
+  "collectorNumber": "250/250",
+  "artist": "Void Enigma Collective",
+  "images": {
+    "thumbnail": "https://assets.shiftcardgame.com/cards/GEN/250/thumbnail.png",
+    "small": "https://assets.shiftcardgame.com/cards/GEN/250/small.png",
+    "medium": "https://assets.shiftcardgame.com/cards/GEN/250/medium.png",
+    "large": "https://assets.shiftcardgame.com/cards/GEN/250/large.png",
+    "fullArt": "https://assets.shiftcardgame.com/cards/GEN/250/full-art.png",
+    "ipfsHash": "QmX9dN2kP7wT5aR3vL8mF1jG4sB6hU0eY3cI9oW2nZ4xQ"
+  },
+  "animation": {
+    "url": "https://assets.shiftcardgame.com/cards/GEN/250/rift-animation.mp4",
+    "type": "video/mp4",
+    "ipfsHash": "QmA1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2xY3zA4bC"
+  },
+  "edition": {
+    "name": "1st Edition",
+    "printRun": 5000,
+    "printNumber": 5000,
+    "finish": "secret_rare"
+  },
+  "nft": {
+    "chain": "solana",
+    "mintAddress": "R1FTfr4ctur3MythicM1ntAddr355000000000000000",
+    "tokenStandard": "metaplex",
+    "metadataUri": "https://arweave.net/xyz789reality",
+    "collection": {
+      "address": "GEN1co11ect10nM1ntAddre55000000000000000000",
+      "verified": true
+    },
+    "sellerFeeBasisPoints": 750,
+    "creators": [
+      {
+        "address": "SH1FTcr3at0r1111111111111111111111111111111",
+        "share": 100,
+        "verified": true
+      }
+    ],
+    "mintedAt": "2026-09-01T00:00:00Z"
+  },
+  "provenance": [
+    {
+      "event": "minted",
+      "to": "SH1FTcr3at0r1111111111111111111111111111111",
+      "timestamp": "2026-09-01T00:00:00Z",
+      "txSignature": "9ZkQn2LMuxhFjwjxErkxTb3AX8PMAMBo1Hv85G8bRFcYvMNjEW7Y3FBvTdPz"
+    }
+  ],
+  "legality": {
+    "standard": "legal",
+    "legacy": "legal",
+    "draft": "banned"
+  },
+  "deckLimits": {
+    "maxCopies": 1
+  },
+  "createdAt": "2026-06-11T00:00:00Z",
+  "updatedAt": "2026-06-11T00:00:00Z",
+  "tags": ["ultra_shift", "mythic_chase", "set_anchor", "uncounterable"]
+}

@@ -1,0 +1,87 @@
+npm install @solana/web3.js import {
+    Connection,
+    PublicKey
+} from "@solana/web3.js";
+
+const connection =
+    new Connection(
+        process.env.RPC_URL!,
+        "confirmed"
+    );
+
+export async function verifyOwnership(
+    walletAddress: string,
+    mintAddress: string
+) {
+
+    const wallet =
+        new PublicKey(walletAddress);
+
+    const mint =
+        new PublicKey(mintAddress);
+
+    const tokenAccounts =
+        await connection.getParsedTokenAccountsByOwner(
+            wallet,
+            {
+                mint
+            }
+        );
+
+    if (
+        tokenAccounts.value.length === 0
+    ) {
+        return false;
+    }
+
+    const amount =
+        tokenAccounts.value[0]
+        .account.data.parsed.info
+        .tokenAmount.uiAmount;
+
+    return amount >= 1;
+} // app/api/verify/route.ts
+
+import { NextResponse }
+from "next/server";
+
+import { verifyOwnership }
+from "@/lib/verifyOwnership";
+
+export async function POST(req: Request) {
+
+    const body =
+        await req.json();
+
+    const {
+        walletAddress,
+        mintAddress
+    } = body;
+
+    const owns =
+        await verifyOwnership(
+            walletAddress,
+            mintAddress
+        );
+
+    return NextResponse.json({
+        owns
+    });
+} const result =
+    await fetch("/api/verify", {
+        method: "POST",
+        body: JSON.stringify({
+            walletAddress,
+            mintAddress
+        })
+    });
+
+const data =
+    await result.json();
+
+if (!data.owns) {
+
+    throw new Error(
+        "NFT ownership verification failed"
+    );
+}

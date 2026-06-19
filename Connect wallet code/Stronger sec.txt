@@ -1,0 +1,19 @@
+Frontend:
+const message =
+    new TextEncoder().encode(
+        "Verify SHIFT Forge Access"
+    );
+
+const signature =
+    await signMessage(message); 
+
+Backend:
+import nacl from "tweetnacl";
+
+Verify: 
+const valid =
+    nacl.sign.detached.verify(
+        message,
+        signature,
+        publicKey.toBytes()
+    );

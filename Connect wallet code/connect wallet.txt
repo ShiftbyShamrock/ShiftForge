@@ -1,0 +1,69 @@
+Frontend (Next.js)
+
+npm install \
+@solana/web3.js \
+@solana/wallet-adapter-react \
+@solana/wallet-adapter-react-ui \
+@solana/wallet-adapter-wallets \
+@solana-mobile/wallet-adapter-protocol-web3js
+
+Wallet Provider
+
+// providers/SolanaProvider.tsx
+
+"use client";
+
+import { FC, ReactNode, useMemo } from "react";
+import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
+import {
+    PhantomWalletAdapter,
+    SolflareWalletAdapter
+} from "@solana/wallet-adapter-wallets";
+
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+
+require("@solana/wallet-adapter-react-ui/styles.css");
+
+export const SolanaProvider: FC<{ children: ReactNode }> = ({ children }) => {
+
+    const endpoint =
+        process.env.NEXT_PUBLIC_RPC_URL!;
+
+    const wallets = useMemo(
+        () => [
+            new PhantomWalletAdapter(),
+            new SolflareWalletAdapter()
+        ],
+        []
+    );
+
+    return (
+        <ConnectionProvider endpoint={endpoint}>
+            <WalletProvider wallets={wallets} autoConnect>
+                <WalletModalProvider>
+                    {children}
+                </WalletModalProvider>
+            </WalletProvider>
+        </ConnectionProvider>
+    );
+};
+
+Wallet Button
+
+"use client";
+
+import { WalletMultiButton }
+from "@solana/wallet-adapter-react-ui";
+
+export default function ConnectWallet() {
+    return <WalletMultiButton />;
+}
+
+Solana Mobile Wallet Adapter
+
+For mobile support:
+
+import {
+    transact
+} from "@solana-mobile/wallet-adapter-protocol-web3js";
+

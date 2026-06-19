@@ -1,0 +1,34 @@
+{
+  "name": "shift-forge",
+  "version": "1.0.0",
+  "description": "SHIFT Forge — NFT to Playable Card Forge + SHIFT Card JSON Standard",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "validate": "node tools/validate.js",
+    "validate:examples": "node tools/validate.js examples/",
+    "test": "node tools/validate.js examples/"
+  },
+  "keywords": ["shift", "card-game", "tcg", "nft", "solana", "forge"],
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@solana/web3.js": "^1.98.0",
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
