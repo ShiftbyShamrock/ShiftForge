@@ -207,6 +207,9 @@ export async function POST(request: Request) {
     try {
       metaplexMetadata = toMetaplexMetadata(card);
 
+      // Brand all Forge-minted NFTs
+      metaplexMetadata.description = 'Forged Shift Playable';
+
       // Inject the newly generated IPFS image URL
       if (imageUrl) {
         metaplexMetadata.image = imageUrl;

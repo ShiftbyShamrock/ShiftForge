@@ -13,8 +13,48 @@
     --text: #ece8f8; --text-dim: #9b93b8; --accent: #8b7ff0; --accent-deep: #5d4fd6; --gold: #ffd27a;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 28px 20px 60px; }
-  .wrap { max-width: 1040px; margin: 0 auto; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px 20px 60px;
+    position: relative;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(93,79,214,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(139,127,240,0.10) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 10% 80%, rgba(255,210,122,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    animation: forgeGlow 8s ease-in-out infinite alternate;
+  }
+  @keyframes forgeGlow {
+    0% { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.04); }
+  }
+  body::after {
+    content: '';
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(139,127,240,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 60%, rgba(255,210,122,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 30%, rgba(139,127,240,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 80%, rgba(93,79,214,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 50%, rgba(255,210,122,0.15) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 90%, rgba(139,127,240,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 10%, rgba(255,210,122,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 70%, rgba(93,79,214,0.25) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+    animation: sparkle 12s linear infinite;
+  }
+  @keyframes sparkle { 0%,100%{opacity:0.6} 50%{opacity:1} }
+  .wrap { max-width: 1040px; margin: 0 auto; position: relative; z-index: 1; }
   header { text-align: center; margin-bottom: 28px; }
   header h1 { font-size: 30px; font-weight: 700; letter-spacing: 0.18em; color: var(--accent); }
   header p { font-size: 13px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.04em; }
@@ -61,10 +101,29 @@
   .coll-badge.show { display: block; }
 
   .wallet-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .wallet-btn { padding: 10px 16px; border-radius: 9px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px; cursor: pointer; font-family: inherit; }
-  .wallet-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .connect-wallet-btn { padding: 14px 28px; border-radius: 12px; background: linear-gradient(135deg, var(--accent-deep), var(--accent)); border: none; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: 0.03em; transition: all 0.2s; }
+  .connect-wallet-btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,127,240,0.3); }
+  .connect-wallet-btn.connected { background: linear-gradient(135deg, #1a6b4a, #2fbd8d); font-size: 13px; padding: 10px 18px; }
+  .connect-wallet-btn.connected:hover { opacity: 0.9; }
+  .manual-link { font-size: 12px; color: var(--text-dim); cursor: pointer; text-decoration: underline; }
+  .manual-link:hover { color: var(--accent); }
   .wallet-status { font-size: 12.5px; color: var(--text-dim); }
   .wallet-status.ok { color: #2fbd8d; }
+
+  .nft-picker { display: none; margin-top: 14px; }
+  .nft-picker.show { display: block; }
+  .nft-picker h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+  .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; max-height: 320px; overflow-y: auto; padding: 4px; }
+  .nft-grid::-webkit-scrollbar { width: 6px; }
+  .nft-grid::-webkit-scrollbar-track { background: var(--surface); border-radius: 3px; }
+  .nft-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .nft-thumb { width: 100%; aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--border); cursor: pointer; overflow: hidden; background: var(--surface); transition: all 0.2s; position: relative; }
+  .nft-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
+  .nft-thumb.selected { border-color: var(--gold); box-shadow: 0 0 12px rgba(255,210,122,0.4); }
+  .nft-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .nft-thumb .nft-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.75); color: #fff; font-size: 9px; padding: 3px 5px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+  .nft-loading { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
+  .nft-empty { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
 
   .trait-row { display: grid; grid-template-columns: 1fr 1fr 38px; gap: 8px; margin-bottom: 8px; }
   .trait-row input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; font-size: 13px; color: var(--text); font-family: inherit; width: 100%; }
@@ -186,25 +245,20 @@
   </div>
 
   <div class="panel">
-    <h2>Step 1 — Wallet &amp; ownership <small>— a card may only be forged from an NFT you own</small></h2>
+    <h2>Step 1 — Connect wallet &amp; select your NFT</h2>
     <div class="wallet-row" id="walletRow">
-      <button class="wallet-btn" data-wallet="phantom">👻 Phantom</button>
-      <button class="wallet-btn" data-wallet="metamask">🦊 MetaMask</button>
-      <button class="wallet-btn" data-wallet="solflare">🔆 Solflare</button>
-      <button class="wallet-btn" data-wallet="backpack">🎒 Backpack</button>
-      <button class="wallet-btn" data-wallet="seeker">📱 Seeker / Mobile</button>
-      <button class="wallet-btn" data-wallet="manual">⌨ Enter address</button>
+      <button class="connect-wallet-btn" id="connectBtn">🔗 Connect Wallet</button>
+      <span class="manual-link" id="manualToggle">or enter address manually</span>
     </div>
-    <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — cards will be stamped UNVERIFIED</div>
+    <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — connect your Solana wallet to browse your NFTs</div>
     <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
       <label>Wallet address (manual)</label>
-      <input type="text" id="manualWallet" placeholder="Paste your Solana or Ethereum address">
-      <div class="note">Manual entry binds the card to this address but cannot prove you control it — your backend must verify ownership on-chain (or via a signed message) before official minting.</div>
+      <input type="text" id="manualWallet" placeholder="Paste your Solana address">
+      <div class="note">Manual entry binds the card to this address but does not load your NFTs. Upload an image manually in Step 2.</div>
     </div>
-    <div class="fg" style="margin-top:10px">
-      <label>NFT identifier (mint address / contract:tokenId)</label>
-      <input type="text" id="nftId" placeholder="e.g. 7xKX...9fGx or 0xabc...:4521">
-      <div class="note"><b>Heads up:</b> browser wallet extensions cannot inject into this sandboxed preview. To connect Phantom / MetaMask / Solflare / Backpack directly, download this file and open it in your own browser. Seeker and other mobile wallets connect via the Solana Mobile Wallet Adapter when this page is served from a real domain. Manual entry works everywhere. In production, your backend verifies on-chain that the connected wallet owns this NFT before forging.</div>
+    <div class="nft-picker" id="nftPicker">
+      <h3>Your NFTs — select one to forge</h3>
+      <div class="nft-grid" id="nftGrid"></div>
     </div>
   </div>
 
@@ -723,79 +777,206 @@
   }
   $('collection').addEventListener('input', updateCollBadge);
 
-  // ═══════════ WALLET — multi-provider ═══════════
+  // ═══════════ WALLET — Auto-detect, Picker, Manual ═══════════
+  var selectedNftMint = '';
+
+  function detectWalletProvider(){
+    if(window.phantom && window.phantom.solana) return { provider: window.phantom.solana, name: 'Phantom' };
+    if(window.solflare) return { provider: window.solflare, name: 'Solflare' };
+    if(window.backpack || (window.xnft && window.xnft.solana)) return { provider: window.backpack || window.xnft.solana, name: 'Backpack' };
+    if(window.solana) return { provider: window.solana, name: 'Solana' };
+    return null;
+  }
+
+  function connectWallet(){
+    var detected = detectWalletProvider();
+    if(!detected){
+      walletFail('No Solana wallet detected. Install Phantom, Solflare, or Backpack, then refresh.');
+      return;
+    }
+    detected.provider.connect().then(function(resp){
+      var pk = (resp && resp.publicKey) || detected.provider.publicKey;
+      setWallet('solana', pk.toString(), detected.name);
+      loadWalletNFTs(pk.toString());
+    }).catch(function(){
+      walletFail(detected.name + ' connection rejected.');
+    });
+  }
+
+  $('connectBtn').addEventListener('click', function(){
+    if(wallet){
+      wallet = null; selectedNftMint = '';
+      var btn = $('connectBtn');
+      btn.textContent = '🔗 Connect Wallet';
+      btn.classList.remove('connected');
+      $('walletStatus').textContent = 'Not connected — connect your Solana wallet to browse your NFTs';
+      $('walletStatus').className = 'wallet-status';
+      $('nftPicker').classList.remove('show');
+      $('nftGrid').innerHTML = '';
+      return;
+    }
+    connectWallet();
+  });
+
+  $('manualToggle').addEventListener('click', function(){
+    var wrap = $('manualWalletWrap');
+    wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
+    if(wrap.style.display === 'flex') $('manualWallet').focus();
+  });
+
+  // ═══════════ NFT PICKER ═══════════
+  function loadWalletNFTs(walletAddress){
+    var picker = $('nftPicker');
+    var grid = $('nftGrid');
+    grid.innerHTML = '<div class="nft-loading">Loading your NFTs…</div>';
+    picker.classList.add('show');
+
+    if(!window.solanaWeb3){
+      grid.innerHTML = '<div class="nft-empty">Solana Web3 not loaded. Refresh the page.</div>';
+      return;
+    }
+    var Web3 = window.solanaWeb3;
+    var TOKEN_PROGRAM_ID = new Web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+    var conn = new Web3.Connection('https://solana-mainnet.g.alchemy.com/v2/XBb97ilIIU9AMXbKKyVxf', 'confirmed');
+    var ownerPk = new Web3.PublicKey(walletAddress);
+
+    conn.getParsedTokenAccountsByOwner(ownerPk, { programId: TOKEN_PROGRAM_ID })
+      .then(function(result){
+        var nftAccounts = result.value.filter(function(item){
+          var info = item.account.data.parsed.info;
+          return info.tokenAmount.decimals === 0 && info.tokenAmount.uiAmount === 1;
+        }).slice(0, 50);
+
+        if(nftAccounts.length === 0){
+          grid.innerHTML = '<div class="nft-empty">No NFTs found in this wallet. You can upload an image manually in Step 2.</div>';
+          return;
+        }
+
+        grid.innerHTML = '';
+        nftAccounts.forEach(function(item){
+          var mint = item.account.data.parsed.info.mint;
+          var thumb = document.createElement('div');
+          thumb.className = 'nft-thumb';
+          thumb.setAttribute('data-mint', mint);
+          thumb.innerHTML = '<img src="" alt="NFT"><div class="nft-name">' + mint.slice(0,8) + '…</div>';
+          thumb.addEventListener('click', function(){ selectNFT(mint, thumb); });
+          grid.appendChild(thumb);
+          loadNFTMetadata(conn, mint, thumb);
+        });
+      })
+      .catch(function(err){
+        console.error('Failed to load wallet NFTs:', err);
+        grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + err.message + '</div>';
+      });
+  }
+
+  function loadNFTMetadata(conn, mintAddress, thumbEl){
+    var Web3 = window.solanaWeb3;
+    var METADATA_PROGRAM = new Web3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+    var mintPk = new Web3.PublicKey(mintAddress);
+
+    Web3.PublicKey.findProgramAddress(
+      [new TextEncoder().encode('metadata'), METADATA_PROGRAM.toBuffer(), mintPk.toBuffer()],
+      METADATA_PROGRAM
+    ).then(function(result){
+      return conn.getAccountInfo(result[0]);
+    }).then(function(acctInfo){
+      if(!acctInfo || !acctInfo.data) return;
+      var data = acctInfo.data;
+      var offset = 65;
+      if(data.length < offset + 4) return;
+      var nameLen = data[offset] | (data[offset+1] << 8) | (data[offset+2] << 16) | (data[offset+3] << 24);
+      offset += 4;
+      var name = new TextDecoder().decode(data.slice(offset, offset + nameLen)).replace(/\0/g, '').trim();
+      offset += nameLen;
+      if(data.length < offset + 4) return;
+      var symLen = data[offset] | (data[offset+1] << 8) | (data[offset+2] << 16) | (data[offset+3] << 24);
+      offset += 4 + symLen;
+      if(data.length < offset + 4) return;
+      var uriLen = data[offset] | (data[offset+1] << 8) | (data[offset+2] << 16) | (data[offset+3] << 24);
+      offset += 4;
+      var uri = new TextDecoder().decode(data.slice(offset, offset + uriLen)).replace(/\0/g, '').trim();
+
+      if(name){
+        var nameEl = thumbEl.querySelector('.nft-name');
+        if(nameEl) nameEl.textContent = name;
+        thumbEl.setAttribute('data-name', name);
+      }
+      if(uri){
+        thumbEl.setAttribute('data-uri', uri);
+        fetch(uri).then(function(r){ return r.json(); }).then(function(meta){
+          if(meta.image){
+            var img = thumbEl.querySelector('img');
+            if(img) img.src = meta.image;
+            thumbEl.setAttribute('data-image', meta.image);
+          }
+          if(meta.collection && meta.collection.name){
+            thumbEl.setAttribute('data-collection', meta.collection.name);
+          } else if(meta.symbol){
+            thumbEl.setAttribute('data-collection', meta.symbol);
+          }
+        }).catch(function(){});
+      }
+    }).catch(function(){});
+  }
+
+  function selectNFT(mintAddress, thumbEl){
+    var prev = document.querySelector('.nft-thumb.selected');
+    if(prev) prev.classList.remove('selected');
+    thumbEl.classList.add('selected');
+    selectedNftMint = mintAddress;
+
+    var name = thumbEl.getAttribute('data-name') || '';
+    if(name) $('tokenName').value = name;
+    var coll = thumbEl.getAttribute('data-collection') || '';
+    if(coll) $('collection').value = coll;
+    updateCollBadge();
+
+    var imageUrl = thumbEl.getAttribute('data-image') || '';
+    if(imageUrl){
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function(){
+        var uz = $('uploadZone');
+        uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
+        uz.classList.add('has-image');
+        uploadedImage = imageUrl;
+        imgEl = img;
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          var dataURL = canvas.toDataURL('image/jpeg');
+          uploadedB64 = dataURL.split(',')[1];
+          uploadedMime = 'image/jpeg';
+        } catch(e) {
+          console.warn('Could not convert NFT image to base64 (CORS):', e);
+        }
+        checkReady();
+      };
+      img.onerror = function(){ console.warn('NFT image CORS blocked, upload manually'); };
+      img.src = imageUrl;
+    }
+    checkReady();
+  }
+
   function setWallet(chain, address, label){
     wallet = { chain: chain, address: address, provider: label };
     var st = $('walletStatus');
     var short = address.length > 12 ? address.slice(0,6) + '…' + address.slice(-4) : address;
     st.textContent = '✓ ' + label + ' connected: ' + short;
     st.className = 'wallet-status ok';
+    var btn = $('connectBtn');
+    btn.textContent = '✓ ' + label + ': ' + short;
+    btn.classList.add('connected');
   }
   function walletFail(msg){
     var st = $('walletStatus');
     st.className = 'wallet-status';
     st.textContent = msg;
   }
-
-  var WALLET_CONNECTORS = {
-    phantom: function(){
-      var p = (window.phantom && window.phantom.solana) || (window.solana && window.solana.isPhantom ? window.solana : null);
-      if(!p) return walletFail('Phantom not detected. Extensions can\u2019t reach this sandboxed preview — download the file and open it in your browser, or use ⌨ Enter address.');
-      p.connect().then(function(resp){
-        setWallet('solana', resp.publicKey.toString(), 'Phantom');
-      }).catch(function(){ walletFail('Phantom connection rejected.'); });
-    },
-    metamask: function(){
-      var eth = window.ethereum;
-      if(eth && eth.providers && eth.providers.length){
-        var mm = eth.providers.filter(function(p){ return p.isMetaMask; })[0];
-        if(mm) eth = mm;
-      }
-      if(!eth) return walletFail('MetaMask not detected. Extensions can\u2019t reach this sandboxed preview — download the file and open it in your browser, or use ⌨ Enter address.');
-      eth.request({ method: 'eth_requestAccounts' }).then(function(accts){
-        setWallet('ethereum', accts[0], 'MetaMask');
-      }).catch(function(){ walletFail('MetaMask connection rejected.'); });
-    },
-    solflare: function(){
-      var p = window.solflare;
-      if(!p) return walletFail('Solflare not detected in this preview — download the file and open it in your browser, or use ⌨ Enter address.');
-      p.connect().then(function(){
-        setWallet('solana', p.publicKey.toString(), 'Solflare');
-      }).catch(function(){ walletFail('Solflare connection rejected.'); });
-    },
-    backpack: function(){
-      var p = window.backpack || (window.xnft && window.xnft.solana);
-      if(!p) return walletFail('Backpack not detected in this preview — download the file and open it in your browser, or use ⌨ Enter address.');
-      p.connect().then(function(resp){
-        var pk = (resp && resp.publicKey) || p.publicKey;
-        setWallet('solana', pk.toString(), 'Backpack');
-      }).catch(function(){ walletFail('Backpack connection rejected.'); });
-    },
-    seeker: function(){
-      // Seeker / Saga and other mobile wallets use the Solana Mobile Wallet Adapter (MWA),
-      // which requires the page to be served from a real https domain and the
-      // @solana-mobile/wallet-adapter library. From a local file or sandbox, fall back to manual.
-      if(window.solanaMobileWalletAdapter){
-        walletFail('Mobile Wallet Adapter detected — integrate @solana-mobile/wallet-adapter for full Seeker support.');
-        return;
-      }
-      walletFail('Seeker connects via the Solana Mobile Wallet Adapter when this app is hosted on a domain. For now, use ⌨ Enter address to bind your Seeker wallet address.');
-      $('manualWalletWrap').style.display = 'flex';
-      $('manualWallet').focus();
-    },
-    manual: function(){
-      var wrap = $('manualWalletWrap');
-      wrap.style.display = wrap.style.display === 'none' ? 'flex' : 'none';
-      if(wrap.style.display === 'flex') $('manualWallet').focus();
-    }
-  };
-
-  $('walletRow').addEventListener('click', function(e){
-    var btn = e.target.closest('[data-wallet]');
-    if(!btn) return;
-    var fn = WALLET_CONNECTORS[btn.getAttribute('data-wallet')];
-    if(fn) fn();
-  });
 
   $('manualWallet').addEventListener('input', function(){
     var v = $('manualWallet').value.trim();
@@ -1049,7 +1230,7 @@
     var tokenName = $('tokenName').value.trim();
     var collection = $('collection').value.trim();
     var description = $('description').value.trim();
-    var nftId = $('nftId').value.trim();
+    var nftId = selectedNftMint;
     var requestedType = $('cardType').value;
     var validTraits = traits.filter(function(t){ return t.k && t.v; });
     var traitStr = validTraits.map(function(t){ return t.k+': '+t.v; }).join('\n');
