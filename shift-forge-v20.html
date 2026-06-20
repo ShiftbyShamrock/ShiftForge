@@ -877,8 +877,9 @@
     detected.provider.connect().then(function(resp){
       var pk = (resp && resp.publicKey) || detected.provider.publicKey;
       setWallet('solana', pk.toString(), detected.name);
-      loadWalletNFTs(pk.toString());
-    }).catch(function(){
+      try { loadWalletNFTs(pk.toString()); } catch(e){ console.error('NFT load error:', e); }
+    }).catch(function(err){
+      console.error('Wallet connect error:', err);
       walletFail(detected.name + ' connection rejected.');
     });
   }
@@ -917,7 +918,7 @@
     }
     var Web3 = window.solanaWeb3;
     var TOKEN_PROGRAM_ID = new Web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-    var TOKEN_2022_PROGRAM_ID = new Web3.PublicKey('TokenzQdBNbLqP5VEhdkASCBkF73WmTGf2u4RMHiP4BS');
+    var TOKEN_2022_PROGRAM_ID = new Web3.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
     var conn = new Web3.Connection('https://solana-mainnet.g.alchemy.com/v2/XBb97ilIIU9AMXbKKyVxf', 'confirmed');
     var ownerPk = new Web3.PublicKey(walletAddress);
 
