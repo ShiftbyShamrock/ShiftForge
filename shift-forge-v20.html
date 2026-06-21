@@ -384,25 +384,7 @@
     <div class="reg-list" id="regList"></div>
   </div>
 
-  <div class="panel">
-    <h2>AI image generation <small>— optional: enhanced SHIFT fantasy artwork (original preserved)</small></h2>
-    <div class="grid2">
-      <div class="fg">
-        <label>Provider</label>
-        <select id="imgProvider">
-          <option value="none">None — use original NFT art (styled)</option>
-          <option value="dalle">OpenAI DALL·E 3</option>
-          <option value="stability">Stability AI — Stable Diffusion</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label>Your API key</label>
-        <input type="password" id="imgApiKey" placeholder="sk-..." autocomplete="off">
-        <div class="note">Kept in memory only.</div>
-      </div>
-      <div class="fg full"><label>Art style direction (optional)</label><input type="text" id="imgStyle" placeholder="e.g. dark fantasy oil painting, dramatic lighting"></div>
-    </div>
-  </div>
+
 
   <button class="gen-btn" id="genBtn" disabled>⚒ Forge SHIFT Card</button>
   <div class="req-hint" id="reqHint">Upload an NFT image and enter a token name to enable</div>
@@ -431,8 +413,7 @@
     <div class="details" id="details"></div>
   </div>
   <footer class="forge-footer">
-    <div class="brand">SHIFT · THE FORGE</div>
-    <div class="sub">NFT → Playable Card Engine · Powered by Solana</div>
+    <div class="brand">Powered by SHIFT on Solana</div>
   </footer>
 </div>
 
@@ -612,7 +593,8 @@
     { match:'claynosaurz',   name:'Claynosaurz', lockClass:'Antihero', lockAff:'Nature',  bonus:{ name:'Herd Stampede',  desc:'Allied Claynosaurz gain +1 Health.' } },
     { match:'solana monkey', name:'SMB',         lockClass:'Ranger',   lockAff:'Fortune', bonus:{ name:'Banana Stash',   desc:'Draw a card when an allied SMB is played.' } },
     { match:'smb',           name:'SMB',         lockClass:'Ranger',   lockAff:'Fortune', bonus:{ name:'Banana Stash',   desc:'Draw a card when an allied SMB is played.' } },
-    { match:'degods',        name:'DeGods',      lockClass:'Paladin',  lockAff:'Divine',  bonus:{ name:'Deadly Devotion', desc:'Allied DeGods gain +1 Power while at full health.' } }
+    { match:'degods',        name:'DeGods',      lockClass:'Paladin',  lockAff:'Divine',  bonus:{ name:'Deadly Devotion', desc:'Allied DeGods gain +1 Power while at full health.' } },
+    { match:'necros',        name:'NECROS',      lockClass:'Necromancer', lockAff:'Arcane', bonus:{ name:'Soul Harvest',    desc:'When an allied NECROS defeats a monster, draw a card from the discard pile.' } }
   ];
   function detectCollection(collection, tokenName){
     var t = ((collection || '') + ' ' + (tokenName || '')).toLowerCase();
@@ -1272,9 +1254,9 @@
     var requestedType = $('cardType').value;
     var validTraits = traits.filter(function(t){ return t.k && t.v; });
     var traitStr = validTraits.map(function(t){ return t.k+': '+t.v; }).join('\n');
-    var provider = $('imgProvider').value;
-    var apiKey = $('imgApiKey').value.trim();
-    var styleNote = $('imgStyle').value.trim();
+    var provider = 'none';
+    var apiKey = '';
+    var styleNote = '';
     var warning = '';
 
     setStatus('Step 1/3 — Forge AI scanning NFT visuals, type, affinity & abilities…', 'pulse');
@@ -2153,9 +2135,12 @@
     sg.addColorStop(0.5, '#ffffff');
     sg.addColorStop(1, '#9fd0ff');
     ctx.fillStyle = sg;
-    ctx.font = '900 27px ' + FONT_HEAD;
+    ctx.font = '900 22px ' + FONT_HEAD;
     ctx.textAlign = 'center';
-    ctx.fillText('SHIFT', 0, 1);
+    ctx.fillText('SHIFT', 0, -5);
+    ctx.font = '600 10px ' + FONT_BODY;
+    ctx.fillStyle = 'rgba(244,233,214,0.65)';
+    ctx.fillText('Powered by SHIFT on Solana', 0, 11);
     ctx.restore();
 
     ctx.textAlign = 'center';
