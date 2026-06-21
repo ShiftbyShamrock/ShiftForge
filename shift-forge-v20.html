@@ -1906,7 +1906,7 @@
 
     // ════════ ART — enlarged window, NFT emerges with transparent lower fade ════════
     var artSrc = (usedGeneratedArt && genImgEl) ? genImgEl : imgEl;
-    var ax = 50, ay = 130, aw = W-100, ah = 392;
+    var ax = 50, ay = 130, aw = W-100, ah = 350;
 
     // ornate gold bezel (full closed frame around the art)
     roundRect(ctx, ax-8, ay-8, aw+16, ah+16, 19);
@@ -2001,14 +2001,14 @@
     }
 
     // ════════ AFFINITY BANNER (boxed row like image 1) ════════
-    var by = ay + ah + 16;
-    box(50, by, W-100, 50, 14, 0.5);
+    var by = ay + ah + 12;
+    box(50, by, W-100, 46, 14, 0.5);
     ctx.textAlign = 'left';
-    ctx.font = '26px ' + FONT_BODY;
-    ctx.fillText(a.icon, 70, by+25);
-    ctx.font = '800 21px ' + FONT_HEAD;
+    ctx.font = '24px ' + FONT_BODY;
+    ctx.fillText(a.icon, 70, by+23);
+    ctx.font = '800 19px ' + FONT_HEAD;
     ctx.fillStyle = a.pale;
-    ctx.fillText(d.affinity, 108, by+25);
+    ctx.fillText(d.affinity, 106, by+23);
     ctx.font = '600 15px ' + FONT_BODY;
     ctx.fillStyle = 'rgba(244,233,214,0.6)';
     ctx.fillText(a.theme, 112 + ctx.measureText(d.affinity).width + 78, by+25);
@@ -2022,7 +2022,7 @@
     ctx.fillText(a.playstyle, W-81, by+25);
 
     // ════════ STAT BOXES (image-1 style, premium gold strokes) ════════
-    var sy = by + 62;
+    var sy = by + 56;
     var stats = [
       { v: d.power,   m:'/10', l:'POWER',    c: a.pale },
       { v: d.health,  m:'/12', l:'HEALTH',   c:'#ff8d8d' },
@@ -2031,21 +2031,21 @@
     var sw = (W-100-24) / 3;
     stats.forEach(function(s, i){
       var sx = 50 + i*(sw+12);
-      box(sx, sy, sw, 92, 16, 0.5);
+      box(sx, sy, sw, 78, 16, 0.5);
       ctx.textAlign = 'center';
-      ctx.font = '900 44px ' + FONT_HEAD;
+       ctx.font = '900 38px ' + FONT_HEAD;
       ctx.fillStyle = s.c;
-      ctx.fillText(String(s.v), sx+sw/2 - 14, sy+38);
+      ctx.fillText(String(s.v), sx+sw/2 - 12, sy+32);
       ctx.font = '600 17px ' + FONT_BODY;
       ctx.fillStyle = 'rgba(244,233,214,0.45)';
-      ctx.fillText(s.m, sx+sw/2 + 14 + ctx.measureText(String(s.v)).width + 8, sy+42);
-      ctx.font = '800 14px ' + FONT_BODY;
+      ctx.fillText(s.m, sx+sw/2 + 12 + ctx.measureText(String(s.v)).width + 6, sy+36);
+      ctx.font = '800 13px ' + FONT_BODY;
       ctx.fillStyle = 'rgba(244,233,214,0.65)';
-      ctx.fillText(s.l, sx+sw/2, sy+72);
+      ctx.fillText(s.l, sx+sw/2, sy+60);
     });
 
     // ════════ LORE (italic, image-1 placement) ════════
-    var ly = sy + 110;
+    var ly = sy + 94;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     ctx.font = 'italic 700 19px ' + FONT_BODY;
@@ -2066,9 +2066,9 @@
         desc: d.ultimateUnlocked ? d.ultimate.description : 'Sealed power awaits — evolve this hero to Level 5.',
         dot:'#ffb338', nameC:'#ffd27a', unlocked: d.ultimateUnlocked }
     ];
-    var boxH = 92;
+    var boxH = 78;
     abilities.forEach(function(ab, i){
-      var y0 = py + i * (boxH + 12);
+      var y0 = py + i * (boxH + 8);
       ctx.globalAlpha = ab.unlocked ? 1 : 0.55;
       box(50, y0, W-100, boxH, 14, 0.5);
       // dot
@@ -2078,7 +2078,7 @@
       ctx.fill();
       // name + type tag
       ctx.textAlign = 'left';
-      ctx.font = '800 22px ' + FONT_HEAD;
+      ctx.font = '800 19px ' + FONT_HEAD;
       ctx.fillStyle = ab.nameC;
       ctx.fillText(ab.nm, 92, y0+30);
       var nw = ctx.measureText(ab.nm).width;
@@ -2087,14 +2087,14 @@
       ctx.fillText(ab.tag, 92 + nw + 14, y0+31);
       // description — enlarged
       ctx.textBaseline = 'alphabetic';
-      ctx.font = '500 19px ' + FONT_BODY;
+      ctx.font = '500 17px ' + FONT_BODY;
       ctx.fillStyle = CREAM;
       wrapText(ctx, ab.desc, 92, y0+62, W-180, 25, 2);
       ctx.textBaseline = 'middle';
       ctx.globalAlpha = 1;
     });
 
-    var cy = py + 3*(boxH+12) + 2;
+    var cy = py + 3*(boxH+8) + 2;
 
     // collection bonus strip
     if(d.collectionBonus){
@@ -2114,7 +2114,7 @@
 
     // ════════ FOOTER — premium SHIFT emblem (logo colors) ════════
     var ey = Math.min(Math.max(cy + 36, H - 66), H - 60);
-    var ew = 184, eh = 50;
+    var ew = 160, eh = 44;
     ctx.save();
     ctx.translate(W/2, ey);
     ctx.beginPath();
