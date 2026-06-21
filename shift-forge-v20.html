@@ -905,121 +905,57 @@
     if(wrap.style.display === 'flex') $('manualWallet').focus();
   });
 
-  // ═══════════ NFT PICKER ═══════════
+  // ═══════════ NFT PICKER (Helius DAS API via backend proxy) ═══════════
   function loadWalletNFTs(walletAddress){
     var picker = $('nftPicker');
     var grid = $('nftGrid');
     grid.innerHTML = '<div class="nft-loading">Loading your NFTs…</div>';
     picker.classList.add('show');
 
-    if(!window.solanaWeb3){
-      grid.innerHTML = '<div class="nft-empty">Solana Web3 not loaded. Refresh the page.</div>';
-      return;
-    }
-    var Web3 = window.solanaWeb3;
-    var TOKEN_PROGRAM_ID = new Web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
-    var TOKEN_2022_PROGRAM_ID = new Web3.PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
-    var conn = new Web3.Connection('https://solana-mainnet.g.alchemy.com/v2/XBb97ilIIU9AMXbKKyVxf', 'confirmed');
-    var ownerPk = new Web3.PublicKey(walletAddress);
-
-    // Query both legacy SPL Token AND Token-2022 programs in parallel
-    var legacyQuery = conn.getParsedTokenAccountsByOwner(ownerPk, { programId: TOKEN_PROGRAM_ID })
-      .catch(function(){ return { value: [] }; });
-    var token2022Query = conn.getParsedTokenAccountsByOwner(ownerPk, { programId: TOKEN_2022_PROGRAM_ID })
-      .catch(function(){ return { value: [] }; });
-
-    Promise.all([legacyQuery, token2022Query])
-      .then(function(results){
-        var combined = results[0].value.concat(results[1].value);
-        var nftAccounts = combined.filter(function(item){
-          var info = item.account.data.parsed.info;
-          return info.tokenAmount.decimals === 0 && info.tokenAmount.uiAmount === 1;
-        });
-
-        // Deduplicate by mint address
-        var seen = {};
-        nftAccounts = nftAccounts.filter(function(item){
-          var mint = item.account.data.parsed.info.mint;
-          if(seen[mint]) return false;
-          seen[mint] = true;
-          return true;
-        }).slice(0, 100);
-
-        // Always show the staked-note when we have results (or not)
-        var stakedNote = $('stakedNote');
-        if(stakedNote) stakedNote.style.display = 'block';
-
-        if(nftAccounts.length === 0){
-          grid.innerHTML = '<div class="nft-empty">No NFTs found in this wallet. You can upload an image manually in Step 2.</div>';
-          return;
-        }
-
-        grid.innerHTML = '';
-        nftAccounts.forEach(function(item){
-          var mint = item.account.data.parsed.info.mint;
-          var thumb = document.createElement('div');
-          thumb.className = 'nft-thumb';
-          thumb.setAttribute('data-mint', mint);
-          thumb.innerHTML = '<img src="" alt="NFT"><div class="nft-name">' + mint.slice(0,8) + '…</div>';
-          thumb.addEventListener('click', function(){ selectNFT(mint, thumb); });
-          grid.appendChild(thumb);
-          loadNFTMetadata(conn, mint, thumb);
-        });
-      })
-      .catch(function(err){
-        console.error('Failed to load wallet NFTs:', err);
-        grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + err.message + '</div>';
+    // Call our backend proxy which uses the Helius DAS getAssetsByOwner API.
+    // This finds ALL NFTs: Metaplex Core, legacy SPL, Token-2022, compressed.
+    fetch(api('/api/wallet-nfts'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet: walletAddress })
+    })
+    .then(function(res){
+      return res.json().then(function(data){
+        if(!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+        return data;
       });
-  }
+    })
+    .then(function(data){
+      var nfts = data.nfts || [];
 
-  function loadNFTMetadata(conn, mintAddress, thumbEl){
-    var Web3 = window.solanaWeb3;
-    var METADATA_PROGRAM = new Web3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
-    var mintPk = new Web3.PublicKey(mintAddress);
+      // Show the staked-note
+      var stakedNote = $('stakedNote');
+      if(stakedNote) stakedNote.style.display = 'block';
 
-    Web3.PublicKey.findProgramAddress(
-      [new TextEncoder().encode('metadata'), METADATA_PROGRAM.toBuffer(), mintPk.toBuffer()],
-      METADATA_PROGRAM
-    ).then(function(result){
-      return conn.getAccountInfo(result[0]);
-    }).then(function(acctInfo){
-      if(!acctInfo || !acctInfo.data) return;
-      var data = acctInfo.data;
-      var offset = 65;
-      if(data.length < offset + 4) return;
-      var nameLen = data[offset] | (data[offset+1] << 8) | (data[offset+2] << 16) | (data[offset+3] << 24);
-      offset += 4;
-      var name = new TextDecoder().decode(data.slice(offset, offset + nameLen)).replace(/\0/g, '').trim();
-      offset += nameLen;
-      if(data.length < offset + 4) return;
-      var symLen = data[offset] | (data[offset+1] << 8) | (data[offset+2] << 16) | (data[offset+3] << 24);
-      offset += 4 + symLen;
-      if(data.length < offset + 4) return;
-      var uriLen = data[offset] | (data[offset+1] << 8) | (data[offset+2] << 16) | (data[offset+3] << 24);
-      offset += 4;
-      var uri = new TextDecoder().decode(data.slice(offset, offset + uriLen)).replace(/\0/g, '').trim();
-
-      if(name){
-        var nameEl = thumbEl.querySelector('.nft-name');
-        if(nameEl) nameEl.textContent = name;
-        thumbEl.setAttribute('data-name', name);
+      if(nfts.length === 0){
+        grid.innerHTML = '<div class="nft-empty">No NFTs found in this wallet. You can upload an image manually in Step 2.</div>';
+        return;
       }
-      if(uri){
-        thumbEl.setAttribute('data-uri', uri);
-        fetch(uri).then(function(r){ return r.json(); }).then(function(meta){
-          if(meta.image){
-            var img = thumbEl.querySelector('img');
-            if(img) img.src = meta.image;
-            thumbEl.setAttribute('data-image', meta.image);
-          }
-          if(meta.collection && meta.collection.name){
-            thumbEl.setAttribute('data-collection', meta.collection.name);
-          } else if(meta.symbol){
-            thumbEl.setAttribute('data-collection', meta.symbol);
-          }
-        }).catch(function(){});
-      }
-    }).catch(function(){});
+
+      grid.innerHTML = '';
+      nfts.forEach(function(nft){
+        var thumb = document.createElement('div');
+        thumb.className = 'nft-thumb';
+        thumb.setAttribute('data-mint', nft.mint);
+        thumb.setAttribute('data-name', nft.name || '');
+        thumb.setAttribute('data-image', nft.image || '');
+        thumb.setAttribute('data-collection', nft.collectionName || nft.collection || '');
+
+        var imgSrc = nft.image || '';
+        thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="this.style.display=\'none\'"><div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>';
+        thumb.addEventListener('click', function(){ selectNFT(nft.mint, thumb); });
+        grid.appendChild(thumb);
+      });
+    })
+    .catch(function(err){
+      console.error('Failed to load wallet NFTs:', err);
+      grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + err.message + '</div>';
+    });
   }
 
   function selectNFT(mintAddress, thumbEl){
