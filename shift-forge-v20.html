@@ -953,32 +953,82 @@
     updateCollBadge();
 
     var imageUrl = thumbEl.getAttribute('data-image') || '';
-    if(imageUrl){
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function(){
-        var uz = $('uploadZone');
-        uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
-        uz.classList.add('has-image');
-        uploadedImage = imageUrl;
-        imgEl = img;
-        try {
-          var canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          var dataURL = canvas.toDataURL('image/jpeg');
-          uploadedB64 = dataURL.split(',')[1];
-          uploadedMime = 'image/jpeg';
-        } catch(e) {
-          console.warn('Could not convert NFT image to base64 (CORS):', e);
-        }
-        checkReady();
-      };
-      img.onerror = function(){ console.warn('NFT image CORS blocked, upload manually'); };
-      img.src = imageUrl;
+    if(!imageUrl){
+      checkReady();
+      return;
     }
+
+    // Helper: populate the upload zone with a loaded image
+    function applyImage(src, imgObject){
+      var uz = $('uploadZone');
+      uz.innerHTML = '<img src="' + src + '" alt="NFT"><div class="uz-change">Change image</div>';
+      uz.classList.add('has-image');
+      uploadedImage = src;
+      imgEl = imgObject;
+      // Try to extract base64 for the Forge analyzer
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = imgObject.width;
+        canvas.height = imgObject.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(imgObject, 0, 0);
+        var dataURL = canvas.toDataURL('image/jpeg');
+        uploadedB64 = dataURL.split(',')[1];
+        uploadedMime = 'image/jpeg';
+      } catch(e) {
+        console.warn('Canvas tainted (CORS), will use proxy for base64');
+      }
+      checkReady();
+    }
+
+    // Step 1: Try direct load with crossOrigin (fast, works for CORS-friendly servers)
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function(){ applyImage(imageUrl, img); };
+    img.onerror = function(){
+      console.warn('Direct CORS load failed for ' + imageUrl + ', trying proxy…');
+      // Step 2: Fall back to backend proxy (fetches image server-side, returns base64)
+      fetch(api('/api/proxy-image'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: imageUrl })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.error) throw new Error(data.error);
+        var proxyImg = new Image();
+        proxyImg.onload = function(){
+          uploadedB64 = data.dataUrl.split(',')[1];
+          uploadedMime = data.contentType || 'image/png';
+          applyImage(data.dataUrl, proxyImg);
+        };
+        proxyImg.onerror = function(){
+          console.error('Proxy image also failed to render');
+          // Last resort: show the image in the zone without canvas support
+          var uz = $('uploadZone');
+          uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
+          uz.classList.add('has-image');
+          uploadedImage = imageUrl;
+          checkReady();
+        };
+        proxyImg.src = data.dataUrl;
+      })
+      .catch(function(err){
+        console.error('Proxy fetch failed:', err);
+        // Still show the image visually even if we can't get base64
+        var fallbackImg = new Image();
+        fallbackImg.onload = function(){
+          var uz = $('uploadZone');
+          uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
+          uz.classList.add('has-image');
+          uploadedImage = imageUrl;
+          imgEl = fallbackImg;
+          checkReady();
+        };
+        fallbackImg.src = imageUrl; // load without crossOrigin — shows but can't canvas-extract
+      });
+    };
+    img.src = imageUrl;
     checkReady();
   }
 
