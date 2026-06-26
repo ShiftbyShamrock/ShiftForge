@@ -809,9 +809,10 @@
     $('affGrid').appendChild(c);
   });
 
-  // collection registration selects
+  // collection registration selects (only if panel exists)
   (function(){
     var cs = $('regClass'), as = $('regAff');
+    if(!cs || !as) return;
     CLASSES.forEach(function(c){ var o = document.createElement('option'); o.value = c; o.textContent = c; cs.appendChild(o); });
     Object.keys(AFFINITIES).forEach(function(a){ var o = document.createElement('option'); o.value = a; o.textContent = a; as.appendChild(o); });
   })();
