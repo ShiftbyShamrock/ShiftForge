@@ -370,20 +370,29 @@
 
   <div class="panel">
     <h2>Trait attributes <small>— auto-detected by the Forge from the NFT artwork &amp; metadata</small></h2>
-    <div class="imgen-banner">The SHIFT Forge AI scans the NFT and assigns traits from its own pools — stat bonuses (Weapon, Armor, Shield, Magic Aura, Pet Companion, Vehicle, Heavy Body, Guardian Trait), special traits (Crown, Halo, Wings, Mask, Horns, and more), and visual affinity keywords. Custom traits are disabled so no card can be given a broken or unbalanced attribute. Detected traits appear on the forged card's details.</div>
-  </div>
-
-  <div class="panel">
-    <h2><span class="step-badge">4</span>Collection recognition <small>— register partner collections; recognized NFTs auto-lock class &amp; affinity</small></h2>
-    <div class="reg-grid">
-      <div class="fg"><label>Collection name</label><input type="text" id="regName" placeholder="e.g. Mad Lads"></div>
-      <div class="fg"><label>Locked class</label><select id="regClass"></select></div>
-      <div class="fg"><label>Locked affinity</label><select id="regAff"></select></div>
+    <div style="padding:16px 0 4px;font-family:'Cinzel',serif;font-size:20px;font-weight:700;background:linear-gradient(90deg,#f3d27a,#ffffff,#9fd0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:0.5px">The SHIFT Forge scans the NFT and assigns traits</div>
+    <div style="margin:12px 0 6px;color:#c8c0d8;font-size:14px;font-weight:600">⚔ Stat Bonus Traits</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Weapon</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Armor</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Shield</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Magic Aura</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Pet Companion</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Vehicle</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Heavy Body</span>
+      <span style="background:rgba(243,210,122,0.12);border:1px solid rgba(243,210,122,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#f3d27a;font-weight:600">Guardian Trait</span>
     </div>
-    <button class="reg-btn" id="regBtn">+ Register collection</button>
-    <div class="reg-list" id="regList"></div>
+    <div style="margin:12px 0 6px;color:#c8c0d8;font-size:14px;font-weight:600">✦ Special Traits Detected</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+      <span style="background:rgba(159,208,255,0.12);border:1px solid rgba(159,208,255,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#9fd0ff;font-weight:600">Crown</span>
+      <span style="background:rgba(159,208,255,0.12);border:1px solid rgba(159,208,255,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#9fd0ff;font-weight:600">Halo</span>
+      <span style="background:rgba(159,208,255,0.12);border:1px solid rgba(159,208,255,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#9fd0ff;font-weight:600">Wings</span>
+      <span style="background:rgba(159,208,255,0.12);border:1px solid rgba(159,208,255,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#9fd0ff;font-weight:600">Mask</span>
+      <span style="background:rgba(159,208,255,0.12);border:1px solid rgba(159,208,255,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#9fd0ff;font-weight:600">Horns</span>
+      <span style="background:rgba(159,208,255,0.12);border:1px solid rgba(159,208,255,0.3);border-radius:20px;padding:5px 14px;font-family:'Cinzel',serif;font-size:13px;color:#9fd0ff;font-weight:600">and more…</span>
+    </div>
+    <div style="font-family:'Cinzel',serif;font-size:15px;font-weight:600;color:rgba(244,233,214,0.65);font-style:italic">Detected traits appear on the forged card's details.</div>
   </div>
-
 
 
   <button class="gen-btn" id="genBtn" disabled>⚒ Forge SHIFT Card</button>
@@ -808,24 +817,30 @@
   })();
 
   function renderRegistry(){
-    $('regList').innerHTML = COLLECTION_REGISTRY.map(function(c){
+    var el = $('regList');
+    if(!el) return;
+    el.innerHTML = COLLECTION_REGISTRY.map(function(c){
       return '<div>• <b>' + c.name + '</b> → Class: <b>' + c.lockClass + '</b>, Affinity: <b>' + c.lockAff + '</b>' + (c.bonus ? ' · ' + c.bonus.name : '') + '</div>';
     }).join('');
   }
   renderRegistry();
 
-  $('regBtn').addEventListener('click', function(){
-    var nm = $('regName').value.trim();
-    if(!nm) return;
-    COLLECTION_REGISTRY.unshift({
-      match: nm.toLowerCase(), name: nm,
-      lockClass: $('regClass').value, lockAff: $('regAff').value,
-      bonus: { name: nm + ' Synergy', desc: 'Allied ' + nm + ' cards gain +1 Power.' }
+  // Collection registration button (only if panel exists)
+  var regBtnEl = $('regBtn');
+  if(regBtnEl){
+    regBtnEl.addEventListener('click', function(){
+      var nm = $('regName').value.trim();
+      if(!nm) return;
+      COLLECTION_REGISTRY.unshift({
+        match: nm.toLowerCase(), name: nm,
+        lockClass: $('regClass').value, lockAff: $('regAff').value,
+        bonus: { name: nm + ' Synergy', desc: 'Allied ' + nm + ' cards gain +1 Power.' }
+      });
+      $('regName').value = '';
+      renderRegistry();
+      updateCollBadge();
     });
-    $('regName').value = '';
-    renderRegistry();
-    updateCollBadge();
-  });
+  }
 
   function updateCollBadge(){
     var c = detectCollection($('collection').value, $('tokenName').value);
