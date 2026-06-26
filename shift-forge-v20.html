@@ -151,11 +151,21 @@
   .nft-picker { display: none; margin-top: 14px; }
   .nft-picker.show { display: block; }
   .nft-picker h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
-  .nft-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; max-height: 320px; overflow-y: auto; padding: 4px; }
+  .nft-grid { max-height: 420px; overflow-y: auto; padding: 4px; }
   .nft-grid::-webkit-scrollbar { width: 6px; }
   .nft-grid::-webkit-scrollbar-track { background: var(--surface); border-radius: 3px; }
   .nft-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  .nft-thumb { width: 100%; aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--border); cursor: pointer; overflow: hidden; background: var(--surface); transition: all 0.2s; position: relative; }
+  .coll-group { margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: var(--surface); }
+  .coll-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; transition: background 0.2s; }
+  .coll-header:hover { background: rgba(255,255,255,0.04); }
+  .coll-header .coll-arrow { font-size: 12px; color: var(--text-dim); transition: transform 0.25s; }
+  .coll-header.open .coll-arrow { transform: rotate(90deg); }
+  .coll-header .coll-title { flex: 1; font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: var(--gold); }
+  .coll-header .coll-count { background: rgba(243,210,122,0.15); border: 1px solid rgba(243,210,122,0.3); border-radius: 12px; padding: 2px 10px; font-size: 11px; font-weight: 700; color: var(--gold); }
+  .coll-body { display: none; padding: 6px 10px 10px; }
+  .coll-body.open { display: block; }
+  .coll-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+  .nft-thumb { width: 100%; aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--border); cursor: pointer; overflow: hidden; background: var(--surface2); transition: all 0.2s; position: relative; }
   .nft-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
   .nft-thumb.selected { border-color: var(--gold); box-shadow: 0 0 12px rgba(255,210,122,0.4); }
   .nft-thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -936,18 +946,71 @@
       }
 
       grid.innerHTML = '';
-      nfts.forEach(function(nft){
-        var thumb = document.createElement('div');
-        thumb.className = 'nft-thumb';
-        thumb.setAttribute('data-mint', nft.mint);
-        thumb.setAttribute('data-name', nft.name || '');
-        thumb.setAttribute('data-image', nft.image || '');
-        thumb.setAttribute('data-collection', nft.collectionName || nft.collection || '');
 
-        var imgSrc = nft.image || '';
-        thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="this.style.display=\'none\'"><div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>';
-        thumb.addEventListener('click', function(){ selectNFT(nft.mint, thumb); });
-        grid.appendChild(thumb);
+      // Group NFTs by collection
+      var groups = {};
+      nfts.forEach(function(nft){
+        var collName = nft.collectionName || nft.collection || '';
+        var key = collName || '__other__';
+        if(!groups[key]) groups[key] = { name: collName || 'Other NFTs', items: [] };
+        groups[key].items.push(nft);
+      });
+
+      // Sort groups: largest first, 'Other' last
+      var sortedKeys = Object.keys(groups).sort(function(a, b){
+        if(a === '__other__') return 1;
+        if(b === '__other__') return -1;
+        return groups[b].items.length - groups[a].items.length;
+      });
+
+      sortedKeys.forEach(function(key, gi){
+        var group = groups[key];
+        var section = document.createElement('div');
+        section.className = 'coll-group';
+
+        var header = document.createElement('div');
+        header.className = 'coll-header';
+        header.innerHTML = '<span class="coll-arrow">&#9654;</span>' +
+          '<span class="coll-title">' + group.name + '</span>' +
+          '<span class="coll-count">' + group.items.length + '</span>';
+
+        var body = document.createElement('div');
+        body.className = 'coll-body';
+        var itemsGrid = document.createElement('div');
+        itemsGrid.className = 'coll-items';
+
+        group.items.forEach(function(nft){
+          var thumb = document.createElement('div');
+          thumb.className = 'nft-thumb';
+          thumb.setAttribute('data-mint', nft.mint);
+          thumb.setAttribute('data-name', nft.name || '');
+          thumb.setAttribute('data-image', nft.image || '');
+          thumb.setAttribute('data-collection', nft.collectionName || nft.collection || '');
+
+          var imgSrc = nft.image || '';
+          thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="this.style.display=\'none\'">' +
+            '<div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>';
+          thumb.addEventListener('click', function(){ selectNFT(nft.mint, thumb); });
+          itemsGrid.appendChild(thumb);
+        });
+
+        body.appendChild(itemsGrid);
+        section.appendChild(header);
+        section.appendChild(body);
+
+        // Auto-expand first group
+        if(gi === 0){
+          header.classList.add('open');
+          body.classList.add('open');
+        }
+
+        header.addEventListener('click', function(){
+          var isOpen = header.classList.contains('open');
+          header.classList.toggle('open', !isOpen);
+          body.classList.toggle('open', !isOpen);
+        });
+
+        grid.appendChild(section);
       });
     })
     .catch(function(err){
