@@ -176,7 +176,8 @@
   .nft-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
   .nft-thumb.selected { border-color: var(--gold); box-shadow: 0 0 12px rgba(255,210,122,0.4); }
   .nft-thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .nft-thumb .nft-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.75); color: #fff; font-size: 9px; padding: 3px 5px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+  .nft-thumb .nft-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.75); color: #fff; font-size: 9px; padding: 3px 5px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; opacity: 0; transition: opacity 0.2s; }
+  .nft-thumb:hover .nft-name { opacity: 1; }
   .nft-loading { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
   .nft-empty { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
 
