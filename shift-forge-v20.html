@@ -156,10 +156,12 @@
   .nft-grid::-webkit-scrollbar-track { background: var(--surface); border-radius: 3px; }
   .nft-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   .coll-group { margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: var(--surface); }
-  .coll-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; user-select: none; transition: background 0.2s; }
+  .coll-header { display: flex; align-items: center; gap: 10px; padding: 8px 14px; cursor: pointer; user-select: none; transition: background 0.2s; }
   .coll-header:hover { background: rgba(255,255,255,0.04); }
   .coll-header .coll-arrow { font-size: 12px; color: var(--text-dim); transition: transform 0.25s; }
   .coll-header.open .coll-arrow { transform: rotate(90deg); }
+  .coll-header .coll-preview { width: 44px; height: 44px; border-radius: 8px; border: 2px solid var(--gold); overflow: hidden; flex-shrink: 0; background: var(--surface2); }
+  .coll-header .coll-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .coll-header .coll-title { flex: 1; font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: var(--gold); }
   .coll-header .coll-count { background: rgba(243,210,122,0.15); border: 1px solid rgba(243,210,122,0.3); border-radius: 12px; padding: 2px 10px; font-size: 11px; font-weight: 700; color: var(--gold); }
   .coll-body { display: none; padding: 6px 10px 10px; }
@@ -970,7 +972,9 @@
 
         var header = document.createElement('div');
         header.className = 'coll-header';
+        var previewSrc = group.items[0] && group.items[0].image ? group.items[0].image : '';
         header.innerHTML = '<span class="coll-arrow">&#9654;</span>' +
+          (previewSrc ? '<span class="coll-preview"><img src="' + previewSrc + '" alt="" onerror="this.parentNode.style.display=\'none\'"></span>' : '') +
           '<span class="coll-title">' + group.name + '</span>' +
           '<span class="coll-count">' + group.items.length + '</span>';
 
