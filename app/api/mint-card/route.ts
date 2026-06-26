@@ -290,6 +290,36 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Step 4: Pin a forge marker to Pinata to prevent duplicate mints ---
+    const sourceNft = card.ownership?.nft || card.nftMint || '';
+    if (sourceNft && pinataJwt) {
+      try {
+        const markerBody = {
+          pinataContent: {
+            sourceNft,
+            mintAddress,
+            wallet,
+            forgedAt: new Date().toISOString(),
+          },
+          pinataMetadata: {
+            name: `shift-forge-${sourceNft}`,
+          },
+        };
+
+        await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${pinataJwt}`,
+          },
+          body: JSON.stringify(markerBody),
+        });
+      } catch (markerErr) {
+        // Non-fatal — mint succeeded, marker is just a convenience
+        console.warn('Failed to pin forge marker:', markerErr);
+      }
+    }
+
     // Return full success details
     return NextResponse.json({
       success: true,

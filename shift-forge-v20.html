@@ -2386,33 +2386,54 @@
       return;
     }
     $('mintBtn').disabled = true;
-    setMint('Fetching mint quote…');
+    setMint('Checking if this NFT has already been forged…');
 
-    fetch(api('/api/mint-quote'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wallet: wallet.address }) })
-      .then(function(r){ return r.json(); })
-      .then(function(q){
-        if(!q.configured) throw new Error('Mint is not live yet (SHIFT token/treasury not configured).');
-        if(q.canAfford === false) throw new Error('Not enough SHIFT (need ' + q.feeShift + ', have ' + (q.walletBalance||0) + ').');
-        setMint('Building SHIFT payment of ' + q.feeShift + ' SHIFT…');
-        return paySHIFT(q).then(function(signature){
-          $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
-          return fetch(api('/api/mint-card'), {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
-          }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
-        });
-      })
-      .then(function(res){
-        if(res.minted && res.mintAddress){
-          setMint('✓ Minted! Your playable SHIFT card NFT: ' + res.mintAddress, 'ok');
-        } else if(res.pendingMint){
-          setMint('✓ Payment verified. On-chain mint will finalize once the mint authority is configured.', 'ok');
-        } else {
-          setMint('Payment verified. ' + (res.message || 'Mint pending.'), 'ok');
-        }
-      })
-      .catch(function(err){ setMint('Mint failed: ' + err.message, 'err'); })
-      .then(function(){ $('mintBtn').disabled = false; });
+    // --- Duplicate check: query Pinata for an existing forge marker ---
+    var sourceNft = selectedNftMint || (cardData.ownership && cardData.ownership.nft) || '';
+    var checkPromise = sourceNft
+      ? fetch(api('/api/check-forged'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nftMint: sourceNft })
+        }).then(function(r){ return r.json(); }).catch(function(){ return { forged: false }; })
+      : Promise.resolve({ forged: false });
+
+    checkPromise.then(function(checkResult){
+      if(checkResult.forged){
+        $('mintBtn').disabled = false;
+        setMint('', '');
+        alert('Already Forged this NFT');
+        return;
+      }
+
+      setMint('Fetching mint quote…');
+      return fetch(api('/api/mint-quote'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wallet: wallet.address }) })
+        .then(function(r){ return r.json(); })
+        .then(function(q){
+          if(!q.configured) throw new Error('Mint is not live yet (SHIFT token/treasury not configured).');
+          if(q.canAfford === false) throw new Error('Not enough SHIFT (need ' + q.feeShift + ', have ' + (q.walletBalance||0) + ').');
+          setMint('Building SHIFT payment of ' + q.feeShift + ' SHIFT…');
+          return paySHIFT(q).then(function(signature){
+            $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
+            return fetch(api('/api/mint-card'), {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+            }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
+          });
+        })
+        .then(function(res){
+          if(!res) return;
+          if(res.minted && res.mintAddress){
+            setMint('✓ Minted! Your playable SHIFT card NFT: ' + res.mintAddress, 'ok');
+          } else if(res.pendingMint){
+            setMint('✓ Payment verified. On-chain mint will finalize once the mint authority is configured.', 'ok');
+          } else {
+            setMint('Payment verified. ' + (res.message || 'Mint pending.'), 'ok');
+          }
+        })
+        .catch(function(err){ setMint('Mint failed: ' + err.message, 'err'); })
+        .then(function(){ $('mintBtn').disabled = false; });
+    });
   }
 
   // Build + send the SPL SHIFT transfer using the connected wallet provider.
