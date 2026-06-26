@@ -116,10 +116,15 @@
   .frame-demo { border-radius: 10px; padding: 10px 12px; font-size: 12px; text-align: center; font-weight: 600; border: 3px solid; background: var(--surface2); transition: transform 0.2s; }
   .frame-demo:hover { transform: scale(1.04); }
 
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: pointer; background: var(--surface2); position: relative; overflow: hidden; }
+  .steps-row { display: flex; gap: 16px; align-items: flex-start; }
+  .steps-row > .panel { margin-bottom: 0; }
+  .steps-row > .panel-step1 { flex: 1; min-width: 0; }
+  .steps-row > .panel-step2 { flex: 0 0 280px; min-width: 0; }
+  @media (max-width: 740px) { .steps-row { flex-direction: column; } .steps-row > .panel-step2 { flex: 1; } }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: pointer; background: var(--surface2); position: relative; overflow: hidden; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
   .upload-zone.has-image { padding: 0; border-style: solid; }
-  .upload-zone img { width: 100%; max-height: 260px; object-fit: contain; display: block; background: #000; }
+  .upload-zone img { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
   .uz-title { font-size: 15px; font-weight: 600; }
   .uz-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
   .uz-change { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; padding: 5px 12px; border-radius: 8px; display: none; }
@@ -332,36 +337,38 @@
     </div>
   </div>
 
-  <div class="panel">
-    <h2><span class="step-badge">1</span>Connect wallet &amp; select your NFT</h2>
-    <div class="wallet-row" id="walletRow">
-      <button class="connect-wallet-btn" id="connectBtn">🔗 Connect Wallet</button>
-      <span class="manual-link" id="manualToggle">or enter address manually</span>
-    </div>
-    <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — connect your Solana wallet to browse your NFTs</div>
-    <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
-      <label>Wallet address (manual)</label>
-      <input type="text" id="manualWallet" placeholder="Paste your Solana address">
-      <div class="note">Manual entry binds the card to this address but does not load your NFTs. Upload an image manually in Step 2.</div>
-    </div>
-    <div class="nft-picker" id="nftPicker">
-      <h3>Your NFTs — select one to forge</h3>
-      <div class="nft-grid" id="nftGrid"></div>
-      <div class="staked-note" id="stakedNote" style="display:none">
-        <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs and won't appear here. Unstake them first, or upload the image manually in Step 2.</div>
-        <span class="note-warn">⚠️ Please Note — if you skip Step 1 your Forged NFT may get stamped UNVERIFIED due to on-chain ownership verification.</span>
+  <div class="steps-row">
+    <div class="panel panel-step1">
+      <h2><span class="step-badge">1</span>Connect wallet &amp; select your NFT</h2>
+      <div class="wallet-row" id="walletRow">
+        <button class="connect-wallet-btn" id="connectBtn">🔗 Connect Wallet</button>
+        <span class="manual-link" id="manualToggle">or enter address manually</span>
+      </div>
+      <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — connect your Solana wallet to browse your NFTs</div>
+      <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
+        <label>Wallet address (manual)</label>
+        <input type="text" id="manualWallet" placeholder="Paste your Solana address">
+        <div class="note">Manual entry binds the card to this address but does not load your NFTs. Upload an image manually in Step 2.</div>
+      </div>
+      <div class="nft-picker" id="nftPicker">
+        <h3>Your NFTs — select one to forge</h3>
+        <div class="nft-grid" id="nftGrid"></div>
+        <div class="staked-note" id="stakedNote" style="display:none">
+          <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs and won't appear here. Unstake them first, or upload the image manually in Step 2.</div>
+          <span class="note-warn">⚠️ Please Note — if you skip Step 1 your Forged NFT may get stamped UNVERIFIED due to on-chain ownership verification.</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="panel">
-    <h2><span class="step-badge">2</span>NFT artwork</h2>
-    <div class="upload-zone" id="uploadZone">
-      <div class="uz-title">Click or drop your NFT image here</div>
-      <div class="uz-sub">PNG · JPG · GIF · WebP</div>
-      <div class="uz-change">Change image</div>
+    <div class="panel panel-step2">
+      <h2><span class="step-badge">2</span>NFT artwork</h2>
+      <div class="upload-zone" id="uploadZone">
+        <div class="uz-title">Click or drop your NFT image here</div>
+        <div class="uz-sub">PNG · JPG · GIF · WebP</div>
+        <div class="uz-change">Change image</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
     </div>
-    <input type="file" id="fileInput" accept="image/*" style="display:none">
   </div>
 
   <div class="panel">
