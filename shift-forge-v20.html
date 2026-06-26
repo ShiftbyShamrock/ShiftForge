@@ -1918,6 +1918,22 @@
     return y + lineH;
   }
 
+  function getWrapTextHeight(ctx, text, maxW, lineH, maxLines){
+    var words = (text || '').split(' ');
+    var line = '', lines = 0;
+    for(var i = 0; i < words.length; i++){
+      var test = line + words[i] + ' ';
+      if(ctx.measureText(test).width > maxW && line !== ''){
+        line = words[i] + ' ';
+        lines++;
+        if(maxLines && lines >= maxLines - 1){
+          return (lines + 1) * lineH;
+        }
+      } else { line = test; }
+    }
+    return (lines + 1) * lineH;
+  }
+
   // ═══════════ ART LIGHTING TREATMENT ═══════════
   // Relights the NFT art — soft key light + affinity rim glow — keeping the art's culture true.
   function applyLightingFX(ctx, ax, ay, aw, ah, a, t){
@@ -2170,17 +2186,8 @@
     ctx.fillText(a.playstyle, W-81, by+25);
 
 
-    // ════════ LORE (italic, image-1 placement) ════════
-    var ly = by + 56;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-    ctx.font = 'italic 700 19px ' + FONT_BODY;
-    ctx.fillStyle = 'rgba(244,233,214,0.88)';
-    ly = wrapText(ctx, '\u201C' + (d.lore || '') + '\u201D', 56, ly + 6, W-112, 26, 2);
-    ctx.textBaseline = 'middle';
-
     // ════════ ABILITY BOXES — image-1 dot/tag style inside premium boxes ════════
-    var py = ly + 14;
+    var py = by + 58;
     var abilities = [
       { tag:'PASSIVE' + (d.passiveUpgraded ? ' ★' : ''), nm: d.passive.name,
         desc: d.passive.description + (d.passiveUpgraded ? ' Effect doubled.' : ''),
@@ -2238,8 +2245,36 @@
       cy += 46;
     }
 
-    // ════════ FOOTER — premium SHIFT emblem (logo colors) ════════
-    var ey = Math.min(Math.max(cy + 36, H - 66), H - 60);
+    // ════════ FOOTER & LORE ════════
+    // Lock the SHIFT shield position
+    var ey = H - 66; // 1054
+    
+    // Measure and render lore text directly above the shield if present
+    var loreText = d.lore ? '\u201C' + d.lore.trim() + '\u201D' : '';
+    if(loreText){
+      ctx.save();
+      ctx.font = 'italic 700 22px ' + FONT_BODY;
+      var lineH_lore = 30;
+      var H_lore = getWrapTextHeight(ctx, loreText, W - 112, lineH_lore, 2);
+      
+      // Calculate top Y coordinate of the lore text bounding box
+      // 1032 is the top of the shield (ey - 22). We want a nice gap of 14px.
+      var shieldTop = ey - 22;
+      var ly = shieldTop - 14 - H_lore;
+      
+      // Safety check: ensure we don't overlap with the abilities/collection bonus
+      ly = Math.max(ly, cy + 14);
+      
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = 'rgba(244,233,214,0.88)';
+      
+      // Render text centered at W/2
+      wrapText(ctx, loreText, W/2, ly + 20, W - 112, lineH_lore, 2);
+      ctx.restore();
+    }
+
+    // Draw the premium SHIFT emblem (logo colors)
     var ew = 160, eh = 44;
     ctx.save();
     ctx.translate(W/2, ey);
