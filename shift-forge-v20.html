@@ -119,7 +119,7 @@
   .steps-row { display: flex; gap: 16px; align-items: flex-start; }
   .steps-row > .panel { margin-bottom: 0; }
   .steps-row > .panel-step1 { flex: 1; min-width: 0; }
-  .steps-row > .panel-step2 { flex: 0 0 280px; min-width: 0; }
+  .steps-row > .panel-step2 { flex: 1; min-width: 0; }
   @media (max-width: 740px) { .steps-row { flex-direction: column; } .steps-row > .panel-step2 { flex: 1; } }
   .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: pointer; background: var(--surface2); position: relative; overflow: hidden; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
@@ -156,21 +156,139 @@
   .nft-picker { display: none; margin-top: 14px; }
   .nft-picker.show { display: block; }
   .nft-picker h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
-  .nft-grid { max-height: 420px; overflow-y: auto; padding: 4px; }
+  .nft-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 6px;
+  }
   .nft-grid::-webkit-scrollbar { width: 6px; }
   .nft-grid::-webkit-scrollbar-track { background: var(--surface); border-radius: 3px; }
   .nft-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  .coll-group { margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: var(--surface); }
-  .coll-header { display: flex; align-items: center; gap: 10px; padding: 8px 14px; cursor: pointer; user-select: none; transition: background 0.2s; }
-  .coll-header:hover { background: rgba(255,255,255,0.04); }
-  .coll-header .coll-arrow { font-size: 12px; color: var(--text-dim); transition: transform 0.25s; }
-  .coll-header.open .coll-arrow { transform: rotate(90deg); }
-  .coll-header .coll-preview { width: 44px; height: 44px; border-radius: 8px; border: 2px solid var(--gold); overflow: hidden; flex-shrink: 0; background: var(--surface2); }
-  .coll-header .coll-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .coll-header .coll-title { flex: 1; font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: var(--gold); }
-  .coll-header .coll-count { background: rgba(243,210,122,0.15); border: 1px solid rgba(243,210,122,0.3); border-radius: 12px; padding: 2px 10px; font-size: 11px; font-weight: 700; color: var(--gold); }
-  .coll-body { display: none; padding: 6px 10px 10px; }
-  .coll-body.open { display: block; }
+  
+  .coll-group {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease-in-out;
+  }
+  .coll-group:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+  }
+  .coll-group.open {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-color: var(--gold);
+    transform: none;
+  }
+  
+  .coll-header {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    position: relative;
+  }
+  .coll-group.open .coll-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .coll-header .coll-preview {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--surface);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .coll-group.open .coll-header .coll-preview {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 2px solid var(--gold);
+  }
+  .coll-header .coll-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  
+  .coll-header .coll-info-wrap {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .coll-group.open .coll-header .coll-info-wrap {
+    padding: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+  }
+  
+  .coll-header .coll-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--gold);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .coll-group.open .coll-header .coll-title {
+    font-size: 14px;
+    white-space: normal;
+    text-overflow: clip;
+    overflow: visible;
+  }
+  
+  .coll-header .coll-count-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .coll-group.open .coll-header .coll-count-arrow {
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  .coll-header .coll-count {
+    background: rgba(243,210,122,0.15);
+    border: 1px solid rgba(243,210,122,0.3);
+    border-radius: 12px;
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .coll-header .coll-arrow {
+    font-size: 9px;
+    color: var(--text-dim);
+    transition: transform 0.25s;
+  }
+  .coll-group.open .coll-header .coll-arrow {
+    transform: rotate(90deg);
+    font-size: 12px;
+  }
+  
+  .coll-body {
+    display: none;
+    padding: 12px;
+  }
+  .coll-body.open {
+    display: block;
+  }
   .coll-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
   .nft-thumb { width: 100%; aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--border); cursor: pointer; overflow: hidden; background: var(--surface2); transition: all 0.2s; position: relative; }
   .nft-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
@@ -285,9 +403,9 @@
   .lore-block { font-style: italic; font-size: 14px; line-height: 1.7; color: var(--text); border-left: 3px solid var(--gold); padding-left: 12px; }
   .code-block { font-family: Consolas, monospace; font-size: 11.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-dim); white-space: pre; overflow-x: auto; }
 
-  .staked-note { margin-top: 12px; padding: 14px 18px; border-radius: 12px; background: rgba(139,127,240,0.08); border: 1px solid rgba(139,127,240,0.25); color: var(--text-dim); font-size: 13px; line-height: 1.7; }
+  .staked-note { margin-top: 16px; margin-bottom: 16px; padding: 16px 20px; border-radius: 12px; background: rgba(139,127,240,0.08); border: 1px solid rgba(139,127,240,0.25); color: var(--text-dim); font-size: 13px; line-height: 1.7; width: 100%; box-sizing: border-box; }
   .staked-note b { color: var(--gold); font-family: 'Cinzel', serif; }
-  .staked-note .note-warn { display: block; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(139,127,240,0.15); color: #ffb347; font-size: 12px; font-weight: 600; }
+  .staked-note .note-warn { display: block; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(139,127,240,0.15); color: #ffb347; font-size: 12.5px; font-weight: 600; }
 
   .forge-footer {
     text-align: center; margin-top: 40px; padding: 24px 20px;
@@ -354,10 +472,6 @@
       <div class="nft-picker" id="nftPicker">
         <h3>Your NFTs — select one to forge</h3>
         <div class="nft-grid" id="nftGrid"></div>
-        <div class="staked-note" id="stakedNote" style="display:none">
-          <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs and won't appear here. Unstake them first, or upload the image manually in Step 2.</div>
-          <span class="note-warn">⚠️ Please Note — if you skip Step 1 your Forged NFT may get stamped UNVERIFIED due to on-chain ownership verification.</span>
-        </div>
       </div>
     </div>
 
@@ -370,6 +484,11 @@
       </div>
       <input type="file" id="fileInput" accept="image/*" style="display:none">
     </div>
+  </div>
+
+  <div class="staked-note" id="stakedNote">
+    <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs some may not appear here. Unstake them first, or upload the image manually in Step 2.</div>
+    <span class="note-warn">⚠️ Please Note — if you skip Step 1 your Forged NFT may get stamped UNVERIFIED due to on-chain ownership verification incomplete.</span>
   </div>
 
   <div class="panel">
@@ -985,10 +1104,15 @@
         var header = document.createElement('div');
         header.className = 'coll-header';
         var previewSrc = group.items[0] && group.items[0].image ? group.items[0].image : '';
-        header.innerHTML = '<span class="coll-arrow">&#9654;</span>' +
-          (previewSrc ? '<span class="coll-preview"><img src="' + previewSrc + '" alt="" onerror="this.parentNode.style.display=\'none\'"></span>' : '') +
-          '<span class="coll-title">' + group.name + '</span>' +
-          '<span class="coll-count">' + group.items.length + '</span>';
+        header.innerHTML = 
+          (previewSrc ? '<div class="coll-preview"><img src="' + previewSrc + '" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '') +
+          '<div class="coll-info-wrap">' +
+            '<div class="coll-title">' + group.name + '</div>' +
+            '<div class="coll-count-arrow">' +
+              '<span class="coll-count">' + group.items.length + ' NFTs</span>' +
+              '<span class="coll-arrow">&#9654;</span>' +
+            '</div>' +
+          '</div>';
 
         var body = document.createElement('div');
         body.className = 'coll-body';
@@ -1016,12 +1140,14 @@
 
         // Auto-expand first group
         if(gi === 0){
+          section.classList.add('open');
           header.classList.add('open');
           body.classList.add('open');
         }
 
         header.addEventListener('click', function(){
-          var isOpen = header.classList.contains('open');
+          var isOpen = section.classList.contains('open');
+          section.classList.toggle('open', !isOpen);
           header.classList.toggle('open', !isOpen);
           body.classList.toggle('open', !isOpen);
         });
