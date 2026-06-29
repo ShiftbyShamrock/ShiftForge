@@ -28,7 +28,7 @@ import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
-const SHIFT_MINT_FEE = Number(process.env.SHIFT_MINT_FEE) || 500;
+const SHIFT_MINT_FEE = 500;
 const RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 
 /**
