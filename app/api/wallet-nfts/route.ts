@@ -22,49 +22,62 @@ export async function POST(request: Request) {
 
     const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
 
-    // Fetch page 1 (up to 100 NFTs)
-    const response = await fetch(heliusUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 'shift-forge-nfts',
-        method: 'getAssetsByOwner',
-        params: {
-          ownerAddress: wallet,
-          page: 1,
-          limit: 100,
-          displayOptions: {
-            showFungible: false,
-            showNativeBalance: false,
+    let page = 1;
+    let allItems: any[] = [];
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await fetch(heliusUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: `shift-forge-nfts-p${page}`,
+          method: 'getAssetsByOwner',
+          params: {
+            ownerAddress: wallet,
+            page,
+            limit: 1000,
+            options: {
+              showFungible: false,
+              showNativeBalance: false,
+              showCollectionMetadata: true,
+              showUnverifiedCollections: true,
+            },
           },
-        },
-      }),
-    });
+        }),
+      });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Helius DAS error:', response.status, text);
-      return NextResponse.json(
-        { error: `Helius API error: ${response.status}` },
-        { status: 502 }
-      );
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Helius DAS error:', response.status, text);
+        return NextResponse.json(
+          { error: `Helius API error: ${response.status}` },
+          { status: 502 }
+        );
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        console.error('Helius RPC error:', data.error);
+        return NextResponse.json(
+          { error: data.error.message || 'Helius RPC error' },
+          { status: 502 }
+        );
+      }
+
+      const items = data.result?.items || [];
+      allItems = allItems.concat(items);
+
+      if (items.length < 1000) {
+        hasMore = false;
+      } else {
+        page++;
+      }
     }
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.error('Helius RPC error:', data.error);
-      return NextResponse.json(
-        { error: data.error.message || 'Helius RPC error' },
-        { status: 502 }
-      );
-    }
-
-    const items = (data.result?.items || []);
 
     // Map to a slim format the frontend expects
-    const nfts = items
+    const nfts = allItems
       .filter((item: any) => {
         // Only include non-fungible assets (NFTs)
         const iface = item.interface || '';
@@ -79,16 +92,21 @@ export async function POST(request: Request) {
           (item.content?.links?.image && item.supply?.print_current_supply <= 1)
         );
       })
-      .map((item: any) => ({
-        mint: item.id,
-        name: item.content?.metadata?.name || item.id.slice(0, 8) + '…',
-        image: item.content?.links?.image || item.content?.files?.[0]?.uri || '',
-        collection: item.grouping?.find((g: any) => g.group_key === 'collection')?.group_value || '',
-        collectionName: item.content?.metadata?.symbol || '',
-        interface: item.interface || 'unknown',
-      }));
+      .map((item: any) => {
+        const collGroup = item.grouping?.find((g: any) => g.group_key === 'collection');
+        const collectionAddress = collGroup?.group_value || '';
+        const collectionName = collGroup?.collection_metadata?.name || item.content?.metadata?.symbol || collectionAddress || 'Other';
+        return {
+          mint: item.id,
+          name: item.content?.metadata?.name || item.id.slice(0, 8) + '…',
+          image: item.content?.links?.image || item.content?.files?.[0]?.uri || '',
+          collection: collectionAddress,
+          collectionName: collectionName,
+          interface: item.interface || 'unknown',
+        };
+      });
 
-    return NextResponse.json({ nfts, total: data.result?.total || nfts.length });
+    return NextResponse.json({ nfts, total: nfts.length });
   } catch (err: any) {
     console.error('wallet-nfts error:', err);
     return NextResponse.json(
