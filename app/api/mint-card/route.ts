@@ -3,7 +3,7 @@
  *
  * Verifies a SHIFT token payment transaction on Solana and records/executes the mint.
  * 1. Checks that the payment transaction exists, succeeded, and contains a token transfer
- *    of at least 7 SHIFT to the treasury wallet.
+ *    of at least 500 SHIFT to the treasury wallet.
  * 2. Decodes the base64 card canvas image and uploads it to Pinata (IPFS).
  * 3. Formats card details to Metaplex metadata standard and uploads to Pinata (IPFS).
  * 4. Mints the playable NFT on-chain using Metaplex Token Metadata and transfers it
@@ -28,7 +28,7 @@ import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
-const SHIFT_MINT_FEE = Number(process.env.SHIFT_MINT_FEE) || 7;
+const SHIFT_MINT_FEE = Number(process.env.SHIFT_MINT_FEE) || 500;
 const RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 
 /**
