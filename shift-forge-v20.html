@@ -2650,14 +2650,23 @@
         if(!parts.length) return '';
         return '<div class="dblock"><h3>SHIFT synergy</h3><div class="forge-hit">' + parts.join('') + '</div></div>';
       })() +
-      '<div class="dblock"><h3>How to win</h3><div class="forge-hit">' +
-        '<div>🎯 <b>Objective:</b> Level up your character\u2019s XP by surviving encounters.</div>' +
-        '<div style="margin-top:4px">🏆 <b>Victory:</b> Reach <b>Level 5 (max XP)</b> before your opponents — or defeat the final boss.</div>' +
-        '<div style="margin-top:4px">📈 This card is <b>Level ' + d.level + '</b> with an XP Value of <b>' + d.xpValue + '</b>' + (d.evoLevel >= 5 ? ' — <span style="color:#a8d97a">max level reached, ultimate unlocked.</span>' : ' — ' + (5 - (d.evoLevel||d.level)) + ' level(s) from the Level 5 win threshold.') + '</div>' +
-      '</div></div>' +
-      '<div class="dblock"><h3>Turn structure reference</h3><div class="forge-hit">' +
-        TURN_STRUCTURE.map(function(p, i){ return '<div>' + (i+1) + '. ' + esc(p) + '</div>'; }).join('') +
-      '</div></div>' +
+      '<div class="dblock htw-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
+        '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:10px; font-weight:700;">HOW TO WIN</h3>' +
+        '<div style="margin-bottom:8px;">🎯 <b>Objective:</b> Level up your Forged Playables with PVE, PVP, CO-OP Boss Battles.</div>' +
+        '<div style="margin-bottom:8px;">🏆 <b>Victory:</b> Reach Level 5 (max XP) before your opponents — or Ally with other players to defeat AI Opponents for Loot.</div>' +
+        '<div style="margin-bottom:16px;">📈 This card is <b>Level ' + d.level + '</b> with an XP Value of <b>' + d.xpValue + '</b>' + 
+          (d.evoLevel >= 5 
+            ? ' — <span style="color:#a8d97a">max level reached, ultimate unlocked. Ready for AI Arena.</span>' 
+            : ' — ' + (5 - (d.evoLevel||d.level)) + ' level(s) from the Level 5 Ready for AI Arena.') + '</div>' +
+        '<div style="height:1px; background:rgba(255,255,255,0.08); margin:16px 0;"></div>' +
+        '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:10px; font-weight:700;">Turn structure reference</h3>' +
+        '<div style="display:flex; flex-direction:column; gap:6px; color:var(--text-dim);">' +
+          '<div>1. Draw Phase</div>' +
+          '<div>2. Main Phase I — play SHIFT Spells, Forged NFTs, Items, declare alliances</div>' +
+          '<div>3. Battle Phase — Antihero abilities resolve, Heroes attack</div>' +
+          '<div>4. End Step — resolve ongoing effects</div>' +
+        '</div>' +
+      '</div>' +
       (vt || nt || at ? '<div class="dblock"><h3>Visual & detected traits</h3><div class="vt-wrap">'+at+vt+nt+'</div></div>' : '');
   }
 
