@@ -975,10 +975,18 @@
 
   // Build the full synergy profile for a forged card
   function buildSynergy(d){
-    var prof = { hero: heroSynergiesFor(d), spellCombo: null, artifactNote: null };
+    var prof = { hero: heroSynergiesFor(d), spellCombo: null, artifactNote: null, collectionAlly: null };
     if(d.compendium){
       if(d.compendium.spell) prof.spellCombo = { spell: d.compendium.spell.name, partner: spellComboFor(d.compendium.spell.name) };
       if(d.compendium.artifact) prof.artifactNote = ARTIFACT_SYNERGY[d.compendium.artifact.name] || null;
+    }
+    if(d.collection && d.collection.trim().length > 0){
+      var coll = d.collection.trim();
+      prof.collectionAlly = {
+        collection: coll,
+        abilityName: 'Ally Synergy: ' + coll + ' Bond',
+        result: 'If another player controls a card from the same collection ("' + coll + '"), both cards gain +2 Power and share their passive abilities.'
+      };
     }
     return prof;
   }
@@ -1706,6 +1714,7 @@
         cardData.autoTraits = autoTraits;
         cardData.compendium = ai.compendium || null;
         cardData.bgPalette = bgForRarity(rarity);
+        cardData.collection = collection;
         cardData.synergy = buildSynergy(cardData);
         cardData.specialTraits = scan.traitHits;
         cardData.recognizedCollection = coll || null;
@@ -2646,6 +2655,9 @@
         }
         if(sy.artifactNote){
           parts.push('<div style="margin-top:6px">⚙ This artifact ' + esc(sy.artifactNote) + '.</div>');
+        }
+        if(sy.collectionAlly){
+          parts.push('<div style="margin-top:8px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:8px; color:#f3d27a;">🤝 <b>' + esc(sy.collectionAlly.abilityName) + ':</b> ' + esc(sy.collectionAlly.result) + '</div>');
         }
         if(!parts.length) return '';
         return '<div class="dblock"><h3>SHIFT synergy</h3><div class="forge-hit">' + parts.join('') + '</div></div>';
