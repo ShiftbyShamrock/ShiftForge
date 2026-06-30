@@ -178,7 +178,7 @@
   .steps-row > .panel-step1 { flex: 1; min-width: 0; }
   .steps-row > .panel-step2 { flex: 1; min-width: 0; }
   @media (max-width: 740px) { .steps-row { flex-direction: column; } .steps-row > .panel-step2 { flex: 1; } }
-  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: pointer; background: var(--surface2); position: relative; overflow: hidden; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: default; background: var(--surface2); position: relative; overflow: hidden; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); }
   .upload-zone.has-image { padding: 0; border-style: solid; }
   .upload-zone img { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
@@ -486,15 +486,7 @@
     <p class="objective-line">🎯 <b>Objective:</b> Level up your Forged Playables with PVE, PVP, CO-OP Boss Battles. Reach <b>Level 5 (max level)</b> before your opponents — or Ally with other players to defeat AI Opponents for Loot and airdrops</p>
   </header>
 
-  <div class="panel">
-    <h2>Card templates — NFTs can become any of these. NFTs become a SHIFT Playable after being FORGED into a Hero.</h2>
-    <div class="tmpl-grid">
-      <div class="tmpl"><b>🛡 Hero</b><br>PFP NFTs — dogs, apes, humans, wizards</div>
-      <div class="tmpl"><b>👹 Antihero</b><br>Creatures &amp; villains — dragons, beasts, demons</div>
-      <div class="tmpl"><b>🗝 Artifact</b><br>Objects — crowns, weapons, relics</div>
-      <div class="tmpl"><b>✨ SHIFT Spell</b><br>Abstract art — portals, cosmic swirls, magic effects</div>
-    </div>
-  </div>
+
 
   <div class="panel">
     <h2>Affinities &amp; ability pools — every card draws from its affinity's pool</h2>
@@ -524,7 +516,7 @@
       <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
         <label>Wallet address (manual)</label>
         <input type="text" id="manualWallet" placeholder="Paste your Solana address">
-        <div class="note">Manual entry binds the card to this address but does not load your NFTs. Upload an image manually in Step 2.</div>
+        <div class="note">Manual entry loads the NFTs for this wallet address. Only on-chain NFT images can be forged.</div>
       </div>
       <div class="nft-picker" id="nftPicker">
         <h3>Your NFTs — select one to forge</h3>
@@ -535,16 +527,15 @@
     <div class="panel panel-step2">
       <h2><span class="step-badge">2</span>NFT artwork</h2>
       <div class="upload-zone" id="uploadZone">
-        <div class="uz-title">Click or drop your NFT image here</div>
-        <div class="uz-sub">PNG · JPG · GIF · WebP</div>
-        <div class="uz-change">Change image</div>
+        <div style="font-size:36px;margin-bottom:8px">🖼️</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Selected NFT artwork</div>
+        <div style="font-size:12px;color:var(--text-dim)">Select an NFT in Step 1 to load its artwork automatically</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" style="display:none">
     </div>
   </div>
 
   <div class="staked-note" id="stakedNote">
-    <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs some may not appear here. Unstake them first, or upload the image manually in Step 2.</div>
+    <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs some may not appear here. Unstake them first. Only on-chain NFT images can be forged.</div>
     <span class="note-warn">⚠️ Please Note — if you skip Step 1 your Forged NFT may get stamped UNVERIFIED due to on-chain ownership verification incomplete.</span>
   </div>
 
@@ -591,7 +582,7 @@
 
 
   <button class="gen-btn" id="genBtn" disabled>⚒ Forge SHIFT Card</button>
-  <div class="req-hint" id="reqHint">Upload an NFT image and enter a token name to enable</div>
+  <div class="req-hint" id="reqHint">Select an NFT in Step 1 and enter a token name to enable</div>
 
   <div class="status" id="status"></div>
 
@@ -1193,7 +1184,7 @@
       if(stakedNote) stakedNote.style.display = 'block';
 
       if(nfts.length === 0){
-        grid.innerHTML = '<div class="nft-empty">No NFTs found in this wallet. You can upload an image manually in Step 2.</div>';
+        grid.innerHTML = '<div class="nft-empty">No NFTs found in this wallet. Only on-chain NFT images can be forged.</div>';
         return;
       }
 
@@ -1301,7 +1292,7 @@
     // Helper: populate the upload zone with a loaded image
     function applyImage(src, imgObject){
       var uz = $('uploadZone');
-      uz.innerHTML = '<img src="' + src + '" alt="NFT"><div class="uz-change">Change image</div>';
+      uz.innerHTML = '<img src="' + src + '" alt="NFT">';
       uz.classList.add('has-image');
       uploadedImage = src;
       imgEl = imgObject;
@@ -1346,7 +1337,7 @@
           console.error('Proxy image also failed to render');
           // Last resort: show the image in the zone without canvas support
           var uz = $('uploadZone');
-          uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
+          uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT">';
           uz.classList.add('has-image');
           uploadedImage = imageUrl;
           checkReady();
@@ -1412,35 +1403,8 @@
   function renderTraits(){ /* no manual trait UI */ }
 
   // ═══════════ UPLOAD ═══════════
-  var fileInput = $('fileInput');
-  var uz = $('uploadZone');
-  uz.addEventListener('click', function(){ fileInput.click(); });
-  fileInput.addEventListener('change', function(e){
-    var f = e.target.files && e.target.files[0];
-    if(f) handleFile(f);
-  });
-  uz.addEventListener('dragover', function(e){ e.preventDefault(); uz.classList.add('drag'); });
-  uz.addEventListener('dragleave', function(){ uz.classList.remove('drag'); });
-  uz.addEventListener('drop', function(e){
-    e.preventDefault(); uz.classList.remove('drag');
-    var f = e.dataTransfer.files && e.dataTransfer.files[0];
-    if(f && f.type.indexOf('image/') === 0) handleFile(f);
-  });
-  function handleFile(f){
-    uploadedMime = f.type || 'image/jpeg';
-    var r = new FileReader();
-    r.onload = function(ev){
-      uploadedImage = ev.target.result;
-      uploadedB64 = uploadedImage.split(',')[1];
-      imgEl = new Image();
-      imgEl.onload = function(){ checkReady(); };
-      imgEl.src = uploadedImage;
-      uz.classList.add('has-image');
-      uz.innerHTML = '<img src="'+uploadedImage+'" alt="NFT preview"><div class="uz-change">Change image</div>';
-      checkReady();
-    };
-    r.readAsDataURL(f);
-  }
+  // manual upload listeners disabled — only on-chain NFTs allowed
+  var uploadedImage = null, uploadedB64 = null, uploadedMime = 'image/jpeg';
 
   $('tokenName').addEventListener('input', function(){ checkReady(); updateCollBadge(); });
   function checkReady(){
@@ -1451,8 +1415,8 @@
     if(ready){ h.style.display = 'none'; }
     else {
       h.style.display = 'block';
-      if(!uploadedImage && !hasName) h.textContent = 'Upload an NFT image and enter a token name to enable';
-      else if(!uploadedImage) h.textContent = 'Upload an NFT image to enable';
+      if(!uploadedImage && !hasName) h.textContent = 'Select an NFT in Step 1 and enter a token name to enable';
+      else if(!uploadedImage) h.textContent = 'Select an NFT in Step 1 to enable';
       else h.textContent = 'Enter a token name to enable';
     }
   }
