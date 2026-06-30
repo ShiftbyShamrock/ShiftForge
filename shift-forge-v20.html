@@ -498,13 +498,8 @@
       <div class="fg"><label>Collection</label><input type="text" id="collection" placeholder="e.g. Fuddy Dogs"></div>
       <div class="fg">
         <label>Card template</label>
-        <select id="cardType">
-          <option value="auto">Auto-detect from artwork</option>
-          <option value="Hero">🛡 Hero</option>
-          <option value="Antihero">👹 Antihero</option>
-          <option value="Artifact">🗝 Artifact</option>
-          <option value="SHIFT Spell">✨ SHIFT Spell</option>
-        </select>
+        <input type="text" value="Auto-detect from artwork" disabled style="cursor: not-allowed; background: rgba(255,255,255,0.05); color: #8a8a9a;">
+        <input type="hidden" id="cardType" value="auto">
       </div>
       <div class="fg"><label>Description / lore hint (optional)</label><input type="text" id="description" placeholder="Backstory, vibe, origin..."></div>
     </div>
