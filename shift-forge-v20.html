@@ -1496,8 +1496,10 @@
     v.evoLevel = lv;
     v.level = lv;
     v.xpValue = calcXP(lv);
-    v.power = Math.min(d.basePower + (lv >= 2 ? 1 : 0), POWER_MAX);
-    v.health = Math.min(d.baseHealth + (lv >= 4 ? 1 : 0), HEALTH_MAX);
+    var pMax = d.oneOfOne ? 21 : POWER_MAX;
+    var hMax = d.oneOfOne ? 25 : HEALTH_MAX;
+    v.power = Math.min(d.basePower + (lv >= 2 ? 1 : 0), pMax);
+    v.health = Math.min(d.baseHealth + (lv >= 4 ? 1 : 0), hMax);
     v.passiveUpgraded = lv >= 3;
     v.ultimateUnlocked = lv >= 5;
     v.ascended = lv >= 6;
@@ -1598,19 +1600,25 @@
           }
         }
 
+        var isOneOfOne = /1\s*of\s*1\b|1\/1\b|one\s*of\s*one\b/i.test(scanBlob);
+        var mult = isOneOfOne ? 2 : 1;
+        var pMax = isOneOfOne ? 21 : POWER_MAX;
+        var hMax = isOneOfOne ? 25 : HEALTH_MAX;
+
         var rarity = rarityFromScore(ai.rarityScore);
         var pB = detectBonuses(allTraits, POWER_BONUSES);
         var hB = detectBonuses(allTraits, HEALTH_BONUSES);
 
         cardData = ai;
+        cardData.oneOfOne = isOneOfOne;
         cardData.rarity = rarity;
         cardData.frameName = FRAME_NAMES[rarity];
-        cardData.powerBase = POWER_BASE[rarity];
+        cardData.powerBase = POWER_BASE[rarity] * mult;
         cardData.powerBonuses = pB;
-        cardData.basePower = Math.min(cardData.powerBase + pB.length, POWER_MAX);
-        cardData.healthBase = HEALTH_BASE[rarity];
+        cardData.basePower = Math.min(cardData.powerBase + pB.length * mult, pMax);
+        cardData.healthBase = HEALTH_BASE[rarity] * mult;
         cardData.healthBonuses = hB;
-        cardData.baseHealth = Math.min(cardData.healthBase + hB.length, HEALTH_MAX);
+        cardData.baseHealth = Math.min(cardData.healthBase + hB.length * mult, hMax);
         cardData.forgeScan = scan;
         cardData.autoTraits = autoTraits;
         cardData.compendium = ai.compendium || null;
@@ -2175,9 +2183,9 @@
     ctx.font = '700 19px ' + FONT_BODY;
     ctx.fillStyle = d.ascended ? '#ffd27a' : a.pale;
     ctx.fillText(ct.icon + ' ' + d.displayClass + '  ·  ' + (d.personality || ''), 138, 94);
-    ctx.font = '600 13px ' + FONT_BODY;
-    ctx.fillStyle = 'rgba(180,180,200,0.7)';
-    ctx.fillText('Shift Playable', 138, 114);
+    ctx.font = d.oneOfOne ? '800 13px ' + FONT_BODY : '600 13px ' + FONT_BODY;
+    ctx.fillStyle = d.oneOfOne ? GOLD : 'rgba(180,180,200,0.7)';
+    ctx.fillText(d.oneOfOne ? '✦ 1/1 FORGED Shift Playable ✦' : 'Shift Playable', 138, 114);
 
     // rarity (top-right like image 1)
     ctx.textAlign = 'right';
@@ -2279,6 +2287,21 @@
       ctx.fill();
       ctx.fillStyle = GOLD;
       ctx.fillText('✦ FORGED ART', ax+23, badgeY+13);
+    }
+    if(d.oneOfOne){
+      ctx.font = '800 13px ' + FONT_BODY;
+      var tw3 = ctx.measureText('✦ 1/1 FORGED').width + 22;
+      var offset = 0;
+      if(usedGeneratedArt){
+        ctx.font = '700 13px ' + FONT_BODY;
+        offset = ctx.measureText('✦ FORGED ART').width + 32;
+      }
+      var bx = ax + 12 + offset;
+      roundRect(ctx, bx, badgeY, tw3, 27, 13);
+      ctx.fillStyle = 'rgba(255,215,0,0.85)';
+      ctx.fill();
+      ctx.fillStyle = '#0a0804';
+      ctx.fillText('✦ 1/1 FORGED', bx+11, badgeY+13);
     }
     if(!d.ownership || !d.ownership.verified){
       ctx.font = '800 13px ' + FONT_BODY;
@@ -2493,8 +2516,8 @@
       '</div></div>' +
 
       '<div class="dblock"><h3>Stat formulas</h3><div class="sf-grid">' +
-        '<div class="sf-box"><div class="sf-val" style="color:'+a.light+'">'+d.power+'</div><div class="sf-lbl">Power / 10</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.powerBase+'<br>'+pb+'</div></div>' +
-        '<div class="sf-box"><div class="sf-val" style="color:#ff8d8d">'+d.health+'</div><div class="sf-lbl">Health / 12</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.healthBase+'<br>'+hb+'</div></div>' +
+        '<div class="sf-box"><div class="sf-val" style="color:'+a.light+'">'+d.power+'</div><div class="sf-lbl">Power / ' + (d.oneOfOne ? 21 : 10) + '</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.powerBase+'<br>'+pb+'</div></div>' +
+        '<div class="sf-box"><div class="sf-val" style="color:#ff8d8d">'+d.health+'</div><div class="sf-lbl">Health / ' + (d.oneOfOne ? 25 : 12) + '</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.healthBase+'<br>'+hb+'</div></div>' +
         '<div class="sf-box"><div class="sf-val" style="color:#ffd27a">'+d.xpValue+'</div><div class="sf-lbl">XP Value</div><div class="sf-bd">Level '+d.level+' defeat reward</div></div>' +
       '</div></div>' +
 
@@ -2571,6 +2594,11 @@
       winConditions: ['Reach Level 5 (max XP) before opponents', 'Defeat the final boss'],
       maxLevel: 5, currentLevel: v.level, xpValue: v.xpValue,
       atWinThreshold: (v.evoLevel || v.level) >= 5
+    };
+    out.stats = {
+      attack: v.power,
+      defense: 0,
+      hp: v.health
     };
     out.imageDataUrl = $('cardCanvas').toDataURL('image/png');
     return out;
@@ -2800,6 +2828,11 @@
     out.recognizedCollection = cardData.recognizedCollection ? cardData.recognizedCollection.name : null;
     out.forgeKeywordHits = cardData.forgeScan ? cardData.forgeScan.affHits.concat(cardData.forgeScan.traitHits) : [];
     out.compendium = cardData.compendium || null;
+    out.stats = {
+      attack: v.power,
+      defense: 0,
+      hp: v.health
+    };
     out.background = cardData.bgPalette ? cardData.bgPalette.name : null;
     out.synergy = cardData.synergy || null;
     out.objective = {
