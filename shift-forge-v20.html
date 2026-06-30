@@ -503,6 +503,23 @@
       <div class="frame-demo" style="border-image:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#b66dff) 1;color:#fff">Legendary · Rainbow Foil</div>
       <div class="frame-demo" style="border-color:#ff6b9d;color:#ffb3d0">Mythic · Animated Cosmic ✦</div>
     </div>
+  <div class="panel synergy-info-panel" style="background: rgba(243,210,122,0.03); border-color: rgba(243,210,122,0.25); padding: 18px 20px;">
+    <h2 style="font-family: 'Cinzel', serif; font-size: 16px; color: var(--gold); letter-spacing: 0.08em; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700;">
+      🌐 SHIFT Synergy &amp; Web3 Alliances
+    </h2>
+    <div style="font-size: 14.5px; line-height: 1.8; color: var(--text); padding: 4px 6px;">
+      <p style="margin-bottom: 12px;">
+        SHIFT integrates and recognizes top <b>Web3 NFT Collections</b> (such as <i>Fuddy Dogs, Mad Lads, DeGods, Claynosaurz</i>, and more). Forging an NFT from a recognized collection locks in unique high-impact <b>Class and Affinity Archetypes</b> and grants powerful in-game advantages:
+      </p>
+      <ul style="margin-left: 20px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; list-style-type: square; color: var(--text-dim);">
+        <li><b>Tactical Ally Synergy Bond:</b> When multiple players field heroes from the same collection, their cards gain an immediate <b>+2 Power</b> boost and pool their passive traits.</li>
+        <li><b>Dominate Bosses &amp; Raids:</b> Pooling collection-based skills is the key to conquering PVE Boss Battles, CO-OP Raids, and clearing higher Threat Levels.</li>
+        <li><b>Earn Rare Loot &amp; Airdrops:</b> Clearing matches with allied collection heroes unlocks premium reward tiers, unique loot crates, and eligibility for exclusive SHIFT token airdrops.</li>
+      </ul>
+      <p style="font-size: 13.5px; color: var(--gold); font-style: italic; margin-top: 10px;">
+        ✦ Connect your Solana wallet, select your NFT, and the Forge will automatically detect its collection and activate the corresponding Ally Synergy profile!
+      </p>
+    </div>
   </div>
 
   <div class="steps-row">
@@ -2660,7 +2677,16 @@
           parts.push('<div style="margin-top:8px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:8px; color:#f3d27a;">🤝 <b>' + esc(sy.collectionAlly.abilityName) + ':</b> ' + esc(sy.collectionAlly.result) + '</div>');
         }
         if(!parts.length) return '';
-        return '<div class="dblock"><h3>SHIFT synergy</h3><div class="forge-hit">' + parts.join('') + '</div></div>';
+        return '<div class="dblock synergy-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
+                 '<h3 style="font-size:12px; font-family:\'Cinzel\', serif; letter-spacing:0.15em; color:var(--gold); margin-bottom:12px; font-weight:700;">SHIFT SYNERGY & WEB3 ALLIANCES</h3>' +
+                 '<div style="font-size:13.5px; color:var(--text-dim); margin-bottom:12px; line-height:1.6;">' +
+                   '🌐 <b>Web3 Collections Synergy:</b> Integrating Solana collections unlocks custom passive abilities, team bonuses, and high-impact tactical advantages. Cooperating with matching collections helps you dominate PVE raids, defeat PVP opponents, and claim high-tier loot/airdrops.' +
+                 '</div>' +
+                 '<div style="height:1px; background:rgba(255,255,255,0.08); margin:12px 0;"></div>' +
+                 '<div class="forge-hit" style="font-family: inherit; font-size: 14.5px;">' + 
+                   parts.join('') + 
+                 '</div>' +
+               '</div>';
       })() +
       '<div class="dblock htw-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
         '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:10px; font-weight:700;">HOW TO WIN</h3>' +
