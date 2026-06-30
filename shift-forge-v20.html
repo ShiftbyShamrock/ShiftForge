@@ -531,9 +531,9 @@
       </div>
       <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — connect your Solana wallet to browse your NFTs</div>
       <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
-        <label>Wallet address (manual)</label>
-        <input type="text" id="manualWallet" placeholder="Paste your Solana address">
-        <div class="note">Manual entry loads the NFTs for this wallet address. Only on-chain NFT images can be forged.</div>
+        <label>Solana Wallet or NFT Token Address</label>
+        <input type="text" id="manualWallet" placeholder="e.g. G4Bfqsu6Myqkn1TCAS8gVuWSRrNtJXHPcJzgaRUd6Avh">
+        <div class="note">Enter a wallet or NFT address. Paste a token address to auto-resolve and select that specific NFT!</div>
       </div>
       <div class="nft-picker" id="nftPicker">
         <h3>Your NFTs — select one to forge</h3>
@@ -1202,6 +1202,9 @@
       });
     })
     .then(function(data){
+      if(data.resolvedOwner){
+        setWallet('solana', data.resolvedOwner, 'Solana Wallet');
+      }
       var nfts = data.nfts || [];
 
       // Show the staked-note
@@ -1289,6 +1292,20 @@
 
         grid.appendChild(section);
       });
+
+      // Auto-select target NFT if the searched value was an NFT token address
+      var targetThumb = grid.querySelector('.nft-thumb[data-mint="' + walletAddress + '"]');
+      if(targetThumb){
+        var parentGroup = targetThumb.closest('.coll-group');
+        if(parentGroup){
+          parentGroup.classList.add('open');
+          var parentHeader = parentGroup.querySelector('.coll-header');
+          if(parentHeader) parentHeader.classList.add('open');
+          var parentBody = parentGroup.querySelector('.coll-body');
+          if(parentBody) parentBody.classList.add('open');
+        }
+        targetThumb.click();
+      }
     })
     .catch(function(err){
       console.error('Failed to load wallet NFTs:', err);
@@ -1406,13 +1423,18 @@
 
   $('manualWallet').addEventListener('input', function(){
     var v = $('manualWallet').value.trim();
-    if(v.length >= 32 || (v.indexOf('0x') === 0 && v.length === 42)){
-      var chain = v.indexOf('0x') === 0 ? 'ethereum' : 'solana';
-      setWallet(chain, v, 'Manual (' + chain + ')');
+    if(v.length >= 32 && v.length <= 44){
+      setWallet('solana', v, 'Manual (solana)');
+      wallet.manualEntry = true;
+      try { loadWalletNFTs(v); } catch(e){ console.error(e); }
+    } else if(v.indexOf('0x') === 0 && v.length === 42){
+      setWallet('ethereum', v, 'Manual (ethereum)');
       wallet.manualEntry = true;
     } else if(v.length === 0){
       wallet = null;
       walletFail('Not connected — cards will be stamped UNVERIFIED');
+      $('nftPicker').classList.remove('show');
+      $('nftGrid').innerHTML = '';
     }
   });
 

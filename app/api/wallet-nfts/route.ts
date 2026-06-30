@@ -22,6 +22,32 @@ export async function POST(request: Request) {
 
     const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
 
+    let targetOwner = wallet;
+    let resolvedOwner: string | null = null;
+
+    // Check if the input is a single NFT token address by querying getAsset first
+    try {
+      const assetResponse = await fetch(heliusUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'resolve-token-mint',
+          method: 'getAsset',
+          params: { id: wallet }
+        })
+      });
+      if (assetResponse.ok) {
+        const assetData = await assetResponse.json();
+        if (assetData.result && assetData.result.ownership?.owner) {
+          targetOwner = assetData.result.ownership.owner;
+          resolvedOwner = targetOwner;
+        }
+      }
+    } catch (e) {
+      console.warn('Helius getAsset resolution failed, falling back to ownerAddress:', e);
+    }
+
     let page = 1;
     let allItems: any[] = [];
     let hasMore = true;
@@ -35,7 +61,7 @@ export async function POST(request: Request) {
           id: `shift-forge-nfts-p${page}`,
           method: 'getAssetsByOwner',
           params: {
-            ownerAddress: wallet,
+            ownerAddress: targetOwner,
             page,
             limit: 1000,
             options: {
@@ -106,7 +132,7 @@ export async function POST(request: Request) {
         };
       });
 
-    return NextResponse.json({ nfts, total: nfts.length });
+    return NextResponse.json({ nfts, total: nfts.length, resolvedOwner });
   } catch (err: any) {
     console.error('wallet-nfts error:', err);
     return NextResponse.json(
