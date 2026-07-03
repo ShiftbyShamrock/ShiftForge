@@ -476,6 +476,61 @@
     background-clip: text;
   }
   .forge-footer .sub { margin-top: 4px; font-size: 11px; color: #6b6385; }
+
+  /* Playshift promo widget */
+  .playshift-promo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(243, 210, 122, 0.03);
+    border: 1px solid rgba(243, 210, 122, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    text-decoration: none !important;
+  }
+  .playshift-promo:hover {
+    background: rgba(243, 210, 122, 0.08);
+    border-color: rgba(243, 210, 122, 0.35);
+    box-shadow: 0 6px 24px rgba(243, 210, 122, 0.2);
+    transform: translateY(-2px);
+  }
+  .playshift-promo .promo-logo {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+  }
+  .playshift-promo:hover .promo-logo {
+    transform: rotate(15deg) scale(1.08);
+  }
+  .playshift-promo .promo-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+  }
+  .playshift-promo .promo-link {
+    font-family: 'Cinzel', serif;
+    font-size: 17.5px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 8px rgba(243, 210, 122, 0.25);
+    transition: color 0.2s;
+  }
+  .playshift-promo:hover .promo-link {
+    color: #ffeeb8;
+  }
+  .playshift-promo .promo-tagline {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
 </style>
 </head>
 <body>
@@ -621,6 +676,22 @@
         <button class="dl-btn mint-btn" id="mintBtn">⚡ Mint as playable NFT</button>
       </div>
       <div class="mint-status" id="mintStatus"></div>
+      
+      <!-- Playshift Link Promo Widget -->
+      <a href="https://playshift.card" target="_blank" class="playshift-promo">
+        <div class="promo-logo">
+          <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 6px rgba(243,210,122,0.55));">
+            <circle cx="50" cy="50" r="45" stroke="#f3d27a" stroke-width="3.5" stroke-dasharray="8 6" />
+            <circle cx="50" cy="50" r="36" stroke="#c9912a" stroke-width="2" />
+            <path d="M38 38 C38 31, 62 31, 62 38 C62 45, 38 47, 38 54 C38 61, 62 61, 62 54" stroke="#ffeeb8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M50 12 L50 20 M50 80 L50 88 M12 50 L20 50 M80 50 L88 50" stroke="#f3d27a" stroke-width="3.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="promo-content">
+          <span class="promo-link">playshift.card</span>
+          <span class="promo-tagline">Powered by SHIFT on SOLANA</span>
+        </div>
+      </a>
     </div>
     <div class="details" id="details"></div>
   </div>
