@@ -422,6 +422,66 @@
   .mint-status .ok { color: #a8d97a; }
   .mint-status .err { color: #f08080; }
   .mint-status .fee { color: #f3d27a; font-weight: 700; }
+  .payment-method-selector {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 20px;
+    margin-bottom: 5px;
+    backdrop-filter: blur(8px);
+  }
+  .payment-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b7ff0;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+  .payment-options {
+    display: flex;
+    gap: 12px;
+  }
+  .payment-opt {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.01);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  .payment-opt:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(139, 127, 240, 0.4);
+  }
+  .payment-opt.active {
+    background: rgba(139, 127, 240, 0.12);
+    border-color: #8b7ff0;
+    box-shadow: 0 0 12px rgba(139, 127, 240, 0.25);
+  }
+  .payment-opt.active .opt-title {
+    color: #a399ff;
+  }
+  .payment-opt.active .opt-val {
+    color: #ffffff;
+  }
+  .opt-title {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    transition: color 0.25s;
+  }
+  .opt-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f3d27a;
+    transition: color 0.25s;
+  }
   .mint-waiting {
     display: block; margin-top: 10px; padding: 14px 18px; border-radius: 10px;
     background: rgba(243,210,122,0.08); border: 1px solid rgba(243,210,122,0.35);
@@ -699,6 +759,20 @@
           <button class="evo-btn" id="evoUp" aria-label="Level up">+</button>
         </div>
         <div class="evo-miles" id="evoMiles"></div>
+      </div>
+      <!-- Segmented Payment Method Selector -->
+      <div class="payment-method-selector" id="paymentSelectorWrap" style="display: none;">
+        <div class="payment-label">Select Payment Method</div>
+        <div class="payment-options">
+          <div class="payment-opt active" id="payOptSol" onclick="selectPaymentMethod('sol')">
+            <div class="opt-title">SOLANA</div>
+            <div class="opt-val">0.25 SOL</div>
+          </div>
+          <div class="payment-opt" id="payOptShift" onclick="selectPaymentMethod('shift')">
+            <div class="opt-title">SHIFT TOKEN</div>
+            <div class="opt-val">250 SHIFT</div>
+          </div>
+        </div>
       </div>
       <div class="dl-row">
         <button class="dl-btn" id="dlPngBtn">⬇ Download card PNG</button>
@@ -2884,38 +2958,78 @@
     el.innerHTML = cls ? '<span class="' + cls + '">' + msg + '</span>' : msg;
   }
 
-  // Fetch the SHIFT mint quote (price + wallet balance) and reflect it in the UI
+  var selectedPayment = 'sol';
+  var currentQuote = null;
+
+  window.selectPaymentMethod = function(method){
+    selectedPayment = method;
+    $('payOptSol').classList.toggle('active', method === 'sol');
+    $('payOptShift').classList.toggle('active', method === 'shift');
+    updateMintQuoteUI();
+  };
+
+  function updateMintQuoteUI(){
+    if(!currentQuote) return;
+    var q = currentQuote;
+    var msg = '';
+    if(selectedPayment === 'sol'){
+      var solFee = q.feeSol || 0.25;
+      msg = 'Mint fee: <span class="fee">' + solFee + ' SOL</span>.';
+      if(typeof q.walletBalanceSol === 'number'){
+        msg += ' Your balance: ' + q.walletBalanceSol.toFixed(4) + ' SOL.';
+        if(q.walletBalanceSol < solFee){
+          msg += ' <span class="err">Not enough SOL to mint.</span>';
+        }
+      } else if(!wallet){
+        msg += ' Connect a wallet to check your balance.';
+      }
+    } else {
+      var shiftFee = q.feeShift || 250;
+      msg = 'Mint fee: <span class="fee">' + shiftFee + ' SHIFT</span>.';
+      if(typeof q.walletBalance === 'number'){
+        msg += ' Your balance: ' + q.walletBalance + ' SHIFT.';
+        if(q.walletBalance < shiftFee){
+          msg += ' <span class="err">Not enough SHIFT to mint.</span>';
+        }
+      } else if(!wallet){
+        msg += ' Connect a wallet to check your balance.';
+      }
+    }
+    setMint(msg, '');
+  }
+
+  // Fetch the SHIFT/SOL mint quote (price + wallet balance) and reflect it in the UI
   function refreshMintQuote(){
     if(!hasBackend()){
-      setMint('Mint requires the deployed backend (SHIFT token payment). Forging & export work here in preview.', '');
+      setMint('Mint requires the deployed backend (SHIFT/SOL payment). Forging & export work here in preview.', '');
+      $('paymentSelectorWrap').style.display = 'none';
       return;
     }
     var body = { wallet: wallet ? wallet.address : null };
     fetch(api('/api/mint-quote'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) })
       .then(function(r){ return r.json(); })
       .then(function(q){
+        currentQuote = q;
         if(!q.configured){
-          setMint('Mint preview: <span class="fee">' + q.feeShift + ' SHIFT</span> per card. Goes live when the SHIFT token & treasury are configured.', '');
+          setMint('Mint preview: <span class="fee">0.25 SOL</span> or <span class="fee">250 SHIFT</span> per card. Goes live when the token & treasury are configured.', '');
+          $('paymentSelectorWrap').style.display = 'none';
           return;
         }
-        var msg = 'Mint fee: <span class="fee">' + q.feeShift + ' SHIFT</span>.';
-        if(typeof q.walletBalance === 'number'){
-          msg += ' Your balance: ' + q.walletBalance + ' SHIFT.';
-          if(!q.canAfford) msg += ' <span class="err">Not enough SHIFT to mint.</span>';
-        } else if(!wallet){
-          msg += ' Connect a wallet to check your balance.';
-        }
-        setMint(msg, '');
+        $('paymentSelectorWrap').style.display = 'block';
+        updateMintQuoteUI();
       })
-      .catch(function(err){ setMint('Could not load mint quote: ' + err.message, 'err'); });
+      .catch(function(err){ 
+        setMint('Could not load mint quote: ' + err.message, 'err'); 
+        $('paymentSelectorWrap').style.display = 'none';
+      });
   }
 
-  // Pay SHIFT then mint. Builds an SPL token transfer to the treasury, has the
+  // Pay SHIFT/SOL then mint. Builds a transfer to the treasury, has the
   // user sign it in their wallet, submits it, then calls the backend to verify + mint.
   function mintCard(){
     if(!cardData) return;
     if(!hasBackend()){
-      setMint('Mint isn\\u2019t available in this preview — deploy the backend, then pay SHIFT to mint a playable NFT.', 'err');
+      setMint('Mint isn\u2019t available in this preview — deploy the backend, then pay to mint a playable NFT.', 'err');
       return;
     }
     if(!wallet || wallet.chain !== 'solana'){
@@ -2947,16 +3061,36 @@
       return fetch(api('/api/mint-quote'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wallet: wallet.address }) })
         .then(function(r){ return r.json(); })
         .then(function(q){
+          currentQuote = q;
           if(!q.configured) throw new Error('Mint is not live yet (SHIFT token/treasury not configured).');
-          if(q.canAfford === false) throw new Error('Not enough SHIFT (need ' + q.feeShift + ', have ' + (q.walletBalance||0) + ').');
-          setMint('Building SHIFT payment of ' + q.feeShift + ' SHIFT…');
-          return paySHIFT(q).then(function(signature){
-            $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
-            return fetch(api('/api/mint-card'), {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
-            }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
-          });
+          
+          if(selectedPayment === 'sol'){
+            var solFee = q.feeSol || 0.25;
+            if(q.walletBalanceSol !== null && q.walletBalanceSol < solFee){
+              throw new Error('Not enough SOL (need ' + solFee + ', have ' + q.walletBalanceSol.toFixed(4) + ').');
+            }
+            setMint('Building SOL payment of ' + solFee + ' SOL…');
+            return paySOL(q).then(function(signature){
+              $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
+              return fetch(api('/api/mint-card'), {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+              }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
+            });
+          } else {
+            var shiftFee = q.feeShift || 250;
+            if(q.walletBalance !== null && q.walletBalance < shiftFee){
+              throw new Error('Not enough SHIFT (need ' + shiftFee + ', have ' + q.walletBalance + ').');
+            }
+            setMint('Building SHIFT payment of ' + shiftFee + ' SHIFT…');
+            return paySHIFT(q).then(function(signature){
+              $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
+              return fetch(api('/api/mint-card'), {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+              }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
+            });
+          }
         })
         .then(function(res){
           if(!res) return;
@@ -2998,7 +3132,7 @@
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
       var walletPubkey = new Web3.PublicKey(wallet.address);
       var decimals = quote.decimals || 9;
-      var amount = Math.round(quote.feeShift * Math.pow(10, decimals));
+      var amount = Math.round((quote.feeShift || 250) * Math.pow(10, decimals));
 
       // Derive Associated Token Address (same algorithm as spl-token SDK)
       function getATA(owner, mint){
@@ -3074,6 +3208,49 @@
       }).catch(function(err){
         reject(new Error('SHIFT payment failed: ' + (err.message || err)));
       });
+    });
+  }
+
+  // Build + send native SOL transfer using connected wallet.
+  function paySOL(q){
+    return new Promise(function(res, rej){
+      var p = (window.phantom && window.phantom.solana) || window.solana || window.solflare || window.backpack;
+      if(!p || !p.signAndSendTransaction){
+        rej(new Error('A Solana wallet that supports signing is required.'));
+        return;
+      }
+      if(!window.solanaWeb3){
+        rej(new Error('Solana Web3 library not loaded. Please refresh the page and try again.'));
+        return;
+      }
+      var W3 = window.solanaWeb3;
+
+      var c = new W3.Connection(q.rpcUrl || 'https://solana-mainnet.g.alchemy.com/v2/XBb97ilIIU9AMXbKKyVxf', 'confirmed');
+      var tPub = new W3.PublicKey(q.treasury);
+      var wPub = new W3.PublicKey(wallet.address);
+      var lamports = Math.round((q.feeSol || 0.25) * 1e9);
+
+      var tx = new W3.Transaction().add(
+        W3.SystemProgram.transfer({
+          fromPubkey: wPub,
+          toPubkey: tPub,
+          lamports: lamports
+        })
+      );
+
+      c.getLatestBlockhash()
+        .then(function(bh){
+          tx.recentBlockhash = bh.blockhash;
+          tx.feePayer = wPub;
+          return p.signAndSendTransaction(tx);
+        })
+        .then(function(txnRes){
+          var sig = txnRes.signature || txnRes;
+          res(sig);
+        })
+        .catch(function(e){
+          rej(e);
+        });
     });
   }
 

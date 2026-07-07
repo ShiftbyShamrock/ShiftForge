@@ -28,7 +28,8 @@ import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
-const SHIFT_MINT_FEE = 500;
+const SHIFT_MINT_FEE = 250;
+const SOL_MINT_FEE = 0.25;
 const RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 
 /**
@@ -128,10 +129,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- Verify SHIFT token transfer to treasury ---
+    // --- Verify payment (either SHIFT tokens or native SOL) ---
+    // 1. Verify SHIFT token transfer
     const preBalances = tx.meta?.preTokenBalances ?? [];
     const postBalances = tx.meta?.postTokenBalances ?? [];
-
     let treasuryReceived = 0;
 
     for (const post of postBalances) {
@@ -140,21 +141,43 @@ export async function POST(request: Request) {
 
       if (isTreasuryOwner && isShiftMint) {
         const postAmount = post.uiTokenAmount?.uiAmount ?? 0;
-
-        // Find matching pre-balance for the same account index
         const pre = preBalances.find(
           (p) => p.accountIndex === post.accountIndex && p.mint === SHIFT_TOKEN_MINT,
         );
         const preAmount = pre?.uiTokenAmount?.uiAmount ?? 0;
-
         treasuryReceived += postAmount - preAmount;
       }
     }
 
-    if (treasuryReceived < SHIFT_MINT_FEE) {
+    // 2. Verify native SOL transfer
+    const accountKeys = tx.transaction.message.getAccountKeys
+      ? tx.transaction.message.getAccountKeys({ accountKeysFromLookups: tx.meta?.loadedAddresses })
+      : (tx.transaction.message.accountKeys as any);
+
+    let treasuryAccountIndex = -1;
+    const numKeys = typeof accountKeys.length === 'number' ? accountKeys.length : 0;
+    for (let i = 0; i < numKeys; i++) {
+      const key = typeof accountKeys.get === 'function' ? accountKeys.get(i) : accountKeys[i];
+      if (key?.toString() === SHIFT_TREASURY) {
+        treasuryAccountIndex = i;
+        break;
+      }
+    }
+
+    let solReceived = 0;
+    if (treasuryAccountIndex !== -1 && tx.meta?.preBalances && tx.meta?.postBalances) {
+      const preSol = tx.meta.preBalances[treasuryAccountIndex] ?? 0;
+      const postSol = tx.meta.postBalances[treasuryAccountIndex] ?? 0;
+      solReceived = (postSol - preSol) / 1e9;
+    }
+
+    const paidShift = treasuryReceived >= SHIFT_MINT_FEE;
+    const paidSol = solReceived >= SOL_MINT_FEE;
+
+    if (!paidShift && !paidSol) {
       return NextResponse.json(
         {
-          error: `Insufficient payment. Expected at least ${SHIFT_MINT_FEE} SHIFT, but treasury received ${treasuryReceived}.`,
+          error: `Insufficient payment. Expected either ${SHIFT_MINT_FEE} SHIFT (received ${treasuryReceived}) or ${SOL_MINT_FEE} SOL (received ${solReceived.toFixed(4)}).`,
         },
         { status: 402 },
       );
