@@ -846,54 +846,54 @@
   // Each affinity has its own pool. Cards draw abilities ONLY from their affinity's pool.
   var POOLS = {
     Fortune: {
-      passive: [ ['Lucky Hand','Your first draw each turn yields an extra card on a lucky roll.'], ['Fortune Favors','25% chance to ignore incoming damage.'], ["Clover's Gift",'Gain +1 XP from every victory.'], ['Windfall','When an enemy is destroyed, draw a card.'] ],
-      active:  [ ['Lucky Strike','Deal 1–3 random damage.'], ['Jackpot Draw','Draw 2 cards; discard 1.'], ['Double Down','Double your next ability\u2019s effect; take 1 damage.'], ['Golden Chance','Flip a coin: heads deal 3, tails draw 2.'] ],
-      ultimate:[ ["Fortune's Blessing",'All allies gain +1 Power and draw a card.'], ['Jackpot Surge','Deal damage equal to cards in your hand.'], ['House Always Wins','Steal 2 XP from your opponent and heal 2.'] ]
+      passive: [ ['Lucky Hand','draw a card add +2 Mana.'], ['Fortune Favors','ignore incoming 3 damage.'], ["Clover's Gift",'Gain +17 XP from every victory.'], ['Windfall','When an enemy is destroyed, draw a card.'] ],
+      active:  [ ['Lucky Strike','Deal +3 damage to any target.'], ['Jackpot Draw','Draw 2 cards.'], ['Double Down','Deal Double Damage Each Turn; lose 1 defence when activated.'], ['Golden Chance','Flip a coin: heads deal 3 damage to any target, tails draw 2 cards.'] ],
+      ultimate:[ ["Fortune's Blessing",'All allies on the battlefield gain +1 Power +3 Defense, player draw a card (once per turn).'], ['Jackpot Surge','Deal damage equal to cards in your hand. (max5)'], ['House Always Wins','Steal +4 HP from your opponent and heal +4 HP.'] ]
     },
     Shadow: {
-      passive: [ ['Veiled Presence','Cannot be targeted the turn it enters play.'], ['Silent Watcher','Reveals one enemy card each turn.'], ['Hidden Intent','Your abilities cannot be countered.'] ],
-      active:  [ ['Shadow Step','Become untargetable until your next turn.'], ['Curse Mark','Apply a curse: target takes +1 from all sources.'], ['Life Drain','Deal 2 damage and heal 1.'] ],
-      ultimate:[ ['Eclipse Form','Become a shadow: immune for one full turn.'], ['Umbral Cataclysm','Deal 3 damage to all enemies and curse them.'], ['King of Shadows','Take control of an enemy debuff and reflect it to all foes.'] ]
+      passive: [ ['Veiled Presence','Cannot be targeted the turn it enters play.'], ['Silent Watcher','Stun two enemy cards each turn.'], ['Hidden Intent','Your abilities cannot be countered.'] ],
+      active:  [ ['Shadow Step','all allies on the battlefield cannot take damage, +3 HP to player for two turns.'], ['Curse Mark','Apply a curse: any target takes +1 Damage from each ally on the battlefield.'], ['Life Drain','Deal +3 damage to any target and heal +2 to any target.'] ],
+      ultimate:[ ['Eclipse Form','Become a shadow: immune for two full turn.'], ['Umbral Cataclysm','Deal 3 damage to all enemies and curse them with stun for two turns.'], ['King of Shadows','Take control of an enemy debuff and reflect it to all foes.'] ]
     },
     Nature: {
-      passive: [ ['Regrowth','Restores 1 health at the start of each turn.'], ['Thorned Hide','Attackers take 1 damage.'], ['Wild Bond','Allied beasts gain +1 Power.'] ],
-      active:  [ ['Healing Bloom','Heal an ally for 3.'], ['Entangle','Root an enemy: it cannot act next turn.'], ['Beast Call','Summon a 1/1 beast token.'] ],
-      ultimate:[ ["Worldtree's Embrace",'Fully heal all allies.'], ['Primal Awakening','All allies gain +1/+1 and Thorned Hide.'], ["Gaia's Wrath",'Deal 3 damage to all enemies; heal allies 2.'] ]
+      passive: [ ['Regrowth','Restores +1 health at the start of each turn.'], ['Thorned Hide','Attackers take +1 damage.'], ['Wild Bond','Allies gain +1 Power.'] ],
+      active:  [ ['Healing Bloom','Heal an ally for +3 Defense.'], ['Entangle','Root any Target enemy: Stun for two turns.'], ['Metal Call','Search through your deck for Target Artifact, item goes to your hand.'] ],
+      ultimate:[ ["Worldtree's Embrace",'Restore all Allies to full health.'], ['Primal Awakening','All allies gain +2/+1 and Thorned Hide.'], ["Gaia's Wrath",'Deal +3 damage to all enemies; heal all allies +2.'] ]
     },
     Flame: {
-      passive: [ ['Burning Soul','Your damage abilities deal +1.'], ['Ember Heart','When damaged, burn the attacker for 1.'], ['Rising Fury','Gain +1 Power each time this takes damage.'] ],
-      active:  [ ['Fireball','Deal 3 damage to one target.'], ['Flame Lash','Deal 2 damage; burn for 1 next turn.'], ['Ignite','Set a target ablaze: 1 damage for 3 turns.'] ],
-      ultimate:[ ['Inferno','Deal 4 damage to every enemy.'], ['Phoenix Rebirth','On death this turn, revive at full health.'], ['Cataclysm of Cinders','Destroy all burning enemies.'] ]
+      passive: [ ['Burning Soul','Your damage abilities deal +1.'], ['Ember Heart','When damaged, burn the attacker for +2 damage.'], ['Rising Fury','Gain +2 Power and +3 Defense each time this takes damage.'], ['Sunburst Flame','Deal +2 Damage to each enemy and +5 Damage to opponents.'] ],
+      active:  [ ['Fireball','Deal +3 damage to any target.'], ['Flame Lash','Deal +2 damage to any target; Stun any target for two turns.'], ['Ignite','Set ablaze: +2 damage to any target for the next 3 turns.'] ],
+      ultimate:[ ['Inferno','Deal +4 damage to every enemy on the battlefield.'], ['Phoenix Rebirth','if players health would reach below 2, revive at full health (max30).'], ['Cataclysm of Cinders','Destroy all enemies on battlefield.'] ]
     },
     Frost: {
       passive: [ ['Frozen Armor','Reduce all incoming damage by 1.'], ['Chilling Aura','Enemies that attack you are slowed.'], ['Permafrost','Frozen enemies stay frozen one extra turn.'] ],
-      active:  [ ['Ice Shard','Deal 2 damage.'], ['Flash Freeze','Freeze a target for one turn.'], ['Glacial Prison','Freeze a target for 2 turns; it takes +1 damage while frozen.'] ],
-      ultimate:[ ['Absolute Zero','Freeze ALL enemies for one full turn.'], ['Eternal Winter','Enemies act last for the next 2 turns.'], ['Avalanche','Deal 3 damage to all enemies; freeze the strongest.'] ]
+      active:  [ ['Ice Shard','Deal +2 damage to any target.'], ['Flash Freeze','Freeze a target for one turn.'], ['Glacial Prison','Freeze any target for 2 turns; it takes +1 damage while frozen.'] ],
+      ultimate:[ ['Absolute Zero','Freeze ALL enemies for one full turn.'], ['Eternal Winter','Opponents cannot cast Shift Spells for the next 2 turns.'], ['Avalanche','Deal +3 damage to all enemies; freeze (Stun) the strongest.'] ]
     },
     Storm: {
-      passive: [ ['Static Charge','Every 3rd ability deals +2 damage.'], ['Tailwind','Always acts first in combat.'], ['Storm Caller','Lightning abilities chain to a second target.'] ],
-      active:  [ ['Lightning Bolt','Deal 2 damage; cannot be dodged.'], ['Gale Slash','Deal 1 damage and gain an extra action.'], ['Thunder Rush','Deal 2 damage and act again next round first.'] ],
-      ultimate:[ ['Tempest Fury','Strike all enemies for 2; you act twice next turn.'], ['Skybreaker','Deal 5 damage to one target.'], ['Storm of Ages','All allies act twice this turn.'] ]
+      passive: [ ['Static Charge','base level deals +1 damage Max Level Deals +5 damage to any target.'], ['Tailwind','After combat resolved deal +2 Damage to any target.'], ['Storm Caller','Activated abilities have chain react (copy effect for new target).'] ],
+      active:  [ ['Lightning Jolt','Deal +2 damage to any target; cannot be dodged.'], ['Gale Slash','Deal +2 damage to any target, opponent discards 2 cards.'], ['Thunder Rush','Deal +3 damage to all enemies on the battlefield.'], ['Electric Hum','Deal +3 damage to opponent and +1 damage to all enemies each turn.'] ],
+      ultimate:[ ['Tempest Fury','all enemies +2 damage; you attack twice next turn.'], ['Skybreaker','Deal +5 damage to one target.'], ['Storm of Ages','All allies do double damage this turn.'] ]
     },
     Arcane: {
-      passive: [ ['Mana Well','Your ultimate charges 1 turn faster.'], ['Runic Insight','See the top card of your deck at all times.'], ['Spell Echo','Your first spell each game casts twice.'] ],
-      active:  [ ['Arcane Missile','Deal 1 damage three times, split any way.'], ['Rune Burst','Deal 2 damage; draw a card.'], ['Mind Spike','Deal 2 damage; look at opponent\u2019s hand.'] ],
-      ultimate:[ ['Reality Rewrite','Undo all damage dealt to allies this turn.'], ['Grand Conjuration','Summon two 2/2 arcane constructs.'], ['Infinite Library','Draw until you hold 5 cards; abilities cost less this turn.'] ]
+      passive: [ ['Mana Well','Gain +2 Mana every turn.'], ['Runic Insight','Draw a card every time player attacks.'], ['Spell Echo','(once per turn) when a Shift Spell is cast copy the effect.'] ],
+      active:  [ ['Arcane Missile','Deal +1 damage to all enemies on battlefield.'], ['Rune Burst','Deal +2 damage to any target; draw a card.'], ['Mind Spike','Deal +3 damage to any target; opponent’s discard 1 card from hand.'] ],
+      ultimate:[ ['Reality Rewrite','prevent damage dealt to allies this turn.'], ['Grand Conjuration','Summon a 2/2 arcane constructs deals +2 damage each turn to opponent.'], ['Infinite Library','Draw until you hold 5 cards; Shift Spells cost 1 less to cast this turn.'] ]
     },
     Rift: {
-      passive: [ ['Phase Shift','50% chance to phase through the first attack each turn.'], ['Temporal Drift','At the start of each turn, swap one card\u2019s position.'], ['Void Touched','Immune to curses and marks.'] ],
-      active:  [ ['Rift Tear','Deal 2 damage ignoring all defenses.'], ['Time Skip','Skip an enemy\u2019s next turn (once per game).'], ['Gravity Well','Pull all enemies; they cannot retreat this turn.'] ],
-      ultimate:[ ['Singularity','Pull all enemies and deal 2 to each.'], ['Timeline Collapse','Reset the board to the start of last turn.'], ['Cosmic Convergence','Copy the strongest ability used this game and cast it.'] ]
+      passive: [ ['Phase Shift','reduce 2 damage in combat each turn.'], ['Temporal Drift','each new turn (draw phase), lose 1 HP but draw an additional card this turn.'], ['Void Touched','Immune to debuff for two turns.'], ['Defense Rift','Deal +3 Damage to any target, heal +3 defense to any target.'] ],
+      active:  [ ['Rift Tear','Deal +2 damage ignoring all defenses.'], ['Time Skip','Skip an opponents next turn combat phase (once per game).'], ['Gravity Well','opponent cannot block this turn.'] ],
+      ultimate:[ ['Singularity','Deal +2 Damage to each enemy.'], ['Timeline Collapse','Deal +5 Damage to each target, max 3.'], ['Cosmic Convergence','Copy the best activated ability in this game and cast it.'] ]
     },
     Divine: {
-      passive: [ ['Holy Aegis','Blocks the first debuff applied each turn.'], ["Guardian's Light",'Adjacent allies take 1 less damage.'], ['Sacred Vow','Cannot drop below 1 health while an ally stands.'] ],
-      active:  [ ['Smite','Deal 2 damage; double vs Shadow affinity.'], ['Radiant Heal','Heal an ally 2 and cleanse debuffs.'], ['Judgment','Deal damage equal to target\u2019s Power, max 3.'] ],
-      ultimate:[ ['Divine Intervention','Prevent all damage to allies this turn.'], ['Wrath of Heaven','Deal 3 holy damage to all enemies.'], ['Ascension','An ally gains +2/+2 and Holy Aegis permanently.'] ]
+      passive: [ ['Holy Aegis','Blocks the debuff applied each turn.'], ["Guardian's Light",'Adjacent allies take 1 less damage.'], ['Sacred Vow','Cannot drop below 1 health while an ally stands.'], ['Stand Tall','Heal all allies on the battlefield +3 defense.'] ],
+      active:  [ ['Smite','Deal +2 damage to any Target; double damage to Shadow affinity.'], ['Radiant Heal','Heal Target ally +2 defense and cleanse debuffs.'], ['Judgment','Deal damage equal to target’s Power, max 5.'] ],
+      ultimate:[ ['Divine Intervention','Prevent all damage to allies and players for two turns.'], ['Wrath of Heaven','Deal +3 damage to all enemies.'], ['Ascension','Target Ally gains +2 Attack +2 Defense (+2/+2).'] ]
     },
     Machine: {
-      passive: [ ['Auto-Repair','Restores 1 health at end of each turn.'], ['Overclock','+1 Power, but takes 1 damage each turn it attacks.'], ['Reinforced Plating','Immune to burn and poison.'] ],
-      active:  [ ['Laser Volley','Deal 1 damage to up to 3 targets.'], ['Deploy Turret','Summon a 0/2 turret that deals 1 each turn.'], ['System Shock','Disable a target\u2019s passive for 2 turns.'] ],
-      ultimate:[ ['Omega Protocol','All allied machines gain +2 Power this turn.'], ['Total Annihilation','Deal 4 damage to one target and 1 to its allies.'], ['Singular Core','Sacrifice 2 health: deal 6 damage to one target.'] ]
+      passive: [ ['Program Ally','Restores +2 Defense to all Allies each turn.'], ['Auto-Repair','Restores +1 health at end of each turn.'], ['Overclock','Gives +2 Power, but takes 1 damage each turn it attacks.'], ['Reinforced Plating','Immune to burn and poison.'] ],
+      active:  [ ['Laser Volley','Deal +4 damage split into 2 targets, +2 damage each.'], ['Deploy Robot Eagle','Summon a 2/4 Robot Eagle that deals +2 Damage each turn to any Target.'], ['System Shock','Disable any target’s passive ability for 2 turns.'] ],
+      ultimate:[ ['Omega Protocol','All allied machines gain +2 Power and +3 Defense.'], ['Total Annihilation','Any Target Deal +4 damage and +2 to all other enemy.'], ['Singular Core','Sacrifice -2 player health: +6 damage to any one target.'] ]
     }
   };
   // ═══════════ COMPENDIUM POOLS (from uploaded SHIFT source docs) ═══════════
