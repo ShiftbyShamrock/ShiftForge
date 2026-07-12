@@ -1,15 +1,14 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import Script from 'next/script';
+import ForgeClientWrapper from './ForgeClientWrapper';
 
 /**
  * The Forge page — serves the complete SHIFT Forge HTML app.
  * This preserves the existing v20 HTML (styles, JS, canvas rendering)
  * as a Next.js page while enabling API routes at /api/*.
  *
- * External CDN scripts (Solana Web3.js) are loaded via Next.js <Script>
- * to ensure they execute in the browser — dangerouslySetInnerHTML does
- * not run <script> tags.
+ * It delegates to ForgeClientWrapper (a Client Component) which dynamically
+ * imports the main client renderer with SSR disabled to bypass hydration issues.
  */
 export default function ForgePage() {
   // Read the Forge HTML at build time
@@ -27,7 +26,6 @@ export default function ForgePage() {
   const styleContent = styleMatch ? styleMatch[1] : '';
 
   // Extract inline <script> content (the main SHIFT Forge app logic)
-  // but strip out any <script src="..."> CDN tags — those are loaded via Next.js <Script>
   const inlineScriptMatch = bodyContent.match(/<script>([\s\S]*?)<\/script>/);
   const inlineScript = inlineScriptMatch ? inlineScriptMatch[1] : '';
 
@@ -41,20 +39,10 @@ export default function ForgePage() {
     });
 
   return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: styleContent }} />
-      {/* Solana Web3.js must load BEFORE the inline script runs */}
-      <Script
-        src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"
-        strategy="beforeInteractive"
-      />
-      <div dangerouslySetInnerHTML={{ __html: cleanBodyContent }} />
-      {/* Inline app script — runs after DOM is ready and Web3 is loaded */}
-      <Script
-        id="shift-forge-app"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{ __html: inlineScript }}
-      />
-    </>
+    <ForgeClientWrapper
+      styleContent={styleContent}
+      cleanBodyContent={cleanBodyContent}
+      inlineScript={inlineScript}
+    />
   );
 }
