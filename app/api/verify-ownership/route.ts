@@ -14,7 +14,7 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { NextResponse } from 'next/server';
 
-const RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
+const RPC_URL = process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe';
 
 export async function POST(request: Request) {
   try {
