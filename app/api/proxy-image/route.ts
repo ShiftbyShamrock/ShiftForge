@@ -1,48 +1,96 @@
 import { NextResponse } from 'next/server';
+import { Buffer } from 'buffer';
+
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
 
 /**
- * Helper to fetch image data with resilient redirection handling.
- * Resolves permagate.io sandbox subdomains by proxying through gateway.irys.xyz
- * and rewriting any legacy.datasprite-cdn.com redirects to permagate.io.
+ * Base32 RFC 4648 encoding helper.
+ */
+function base32Encode(buffer: Buffer): string {
+  let bits = 0;
+  let value = 0;
+  let output = '';
+  for (let i = 0; i < buffer.length; i++) {
+    value = (value << 8) | buffer[i];
+    bits += 8;
+    while (bits >= 5) {
+      output += ALPHABET[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) {
+    output += ALPHABET[(value << (5 - bits)) & 31];
+  }
+  return output;
+}
+
+/**
+ * Decodes a base64url string to raw bytes.
+ */
+function base64UrlToBytes(b64urlString: string): Buffer {
+  let b64 = b64urlString.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) {
+    b64 += '=';
+  }
+  return Buffer.from(b64, 'base64');
+}
+
+/**
+ * Deterministically rewrites Arweave/Irys URLs to their sandboxed permagate.io subdomains.
+ * Bypasses broken apex domain resolution and redirect bugs.
+ */
+function getResilientUrl(url: string): string {
+  if (!url) return '';
+  
+  // Find any 43-character Arweave/Irys transaction ID
+  const txIdMatch = url.match(/[a-zA-Z0-9_-]{43}/);
+  if (!txIdMatch) return url;
+  
+  const txId = txIdMatch[0];
+  
+  // Only apply rewrite to Arweave/Irys domains
+  const isArweaveOrIrys = 
+    url.includes('permagate.io') || 
+    url.includes('arweave.net') || 
+    url.includes('irys.xyz') || 
+    url.includes('datasprite-cdn.com');
+    
+  if (!isArweaveOrIrys) return url;
+
+  try {
+    const bytes = base64UrlToBytes(txId);
+    const subdomain = base32Encode(bytes);
+    
+    // Extract rest of path right after the transaction ID
+    const txIdIndex = url.indexOf(txId);
+    const restOfPath = url.substring(txIdIndex + txId.length);
+    
+    // Construct the working sandboxed permagate.io URL
+    const rewritten = `https://${subdomain}.permagate.io/${txId}${restOfPath}`;
+    console.log(`[Proxy Resilient] Rewrote URL from ${url} to ${rewritten}`);
+    return rewritten;
+  } catch (e) {
+    console.error('[Proxy Resilient] Failed to derive sandboxed URL:', e);
+    return url;
+  }
+}
+
+/**
+ * Resilient image fetch handler.
  */
 async function fetchResilientImage(url: string) {
-  let targetUrl = url;
-
-  // If the URL points directly to permagate.io, convert it to gateway.irys.xyz first
-  // to leverage their 302 redirect and extract the correct sandbox subdomain.
-  if (targetUrl.includes('permagate.io') && !targetUrl.includes('.permagate.io')) {
-    targetUrl = targetUrl.replace('permagate.io', 'gateway.irys.xyz');
-  }
+  const targetUrl = getResilientUrl(url);
 
   let response = await fetch(targetUrl, {
     headers: {
       'Accept': 'image/*',
       'User-Agent': 'SHIFT-Forge/1.0',
     },
-    redirect: 'manual'
   });
 
-  // Intercept Irys redirects (302/301) to replace the broken legacy.datasprite-cdn.com
-  if (response.status === 302 || response.status === 301) {
-    const redirectUrl = response.headers.get('location');
-    if (redirectUrl) {
-      let rewrittenUrl = redirectUrl;
-      if (redirectUrl.includes('legacy.datasprite-cdn.com')) {
-        rewrittenUrl = redirectUrl.replace('legacy.datasprite-cdn.com', 'permagate.io');
-      }
-      console.log(`[Proxy Image] Redirect intercepted. Rewriting to: ${rewrittenUrl}`);
-      response = await fetch(rewrittenUrl, {
-        headers: {
-          'Accept': 'image/*',
-          'User-Agent': 'SHIFT-Forge/1.0',
-        }
-      });
-    }
-  }
-
-  // Fallback: If the response is not ok and we attempted a rewrite, try fetching the original URL directly
+  // Fallback: If rewritten URL fails, try fetching the original URL directly
   if (!response.ok && targetUrl !== url) {
-    console.warn(`[Proxy Image] Rewritten fetch failed with status ${response.status}. Retrying original URL: ${url}`);
+    console.warn(`[Proxy Image] Resilient URL failed with status ${response.status}. Retrying original URL: ${url}`);
     response = await fetch(url, {
       headers: {
         'Accept': 'image/*',
@@ -57,7 +105,7 @@ async function fetchResilientImage(url: string) {
 /**
  * POST /api/proxy-image
  * Fetches an NFT image server-side to bypass CORS.
- * Returns the image as base64 data URL so the frontend can use it on a canvas.
+ * Returns the image as base64 data URL.
  */
 export async function POST(request: Request) {
   try {
@@ -98,8 +146,7 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/proxy-image
- * Fetches the NFT image and returns the binary image file directly with caching.
- * Useful as a direct img src: <img src="/api/proxy-image?url=...">
+ * Streams the binary image bytes directly with caching.
  */
 export async function GET(request: Request) {
   try {
