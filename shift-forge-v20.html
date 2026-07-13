@@ -1404,8 +1404,8 @@
   // ═══════════ NFT PICKER (Helius DAS API via backend proxy) ═══════════
   function cleanImageURL(url) {
     if (!url) return '';
-    if (url.indexOf('permagate.io') !== -1) {
-      return url.replace(/https?:\/\/[^/]*permagate\.io\//, 'https://arweave.net/');
+    if (url.indexOf('permagate.io') !== -1 || url.indexOf('arweave.net') !== -1 || url.indexOf('irys.xyz') !== -1) {
+      return '/api/proxy-image?url=' + encodeURIComponent(url);
     }
     return url;
   }
