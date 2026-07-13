@@ -49,10 +49,16 @@ export default function ForgeClient({ styleContent, cleanBodyContent, inlineScri
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styleContent }} />
-      {/* Solana Web3.js must load BEFORE the inline script runs */}
+      {/* Solana Web3.js loaded with jsDelivr CDN and unpkg fallback */}
       <Script
-        src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"
-        strategy="beforeInteractive"
+        src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"
+        strategy="afterInteractive"
+        onError={(e) => {
+          console.error('Failed to load Solana Web3 from jsDelivr, falling back to unpkg...', e);
+          const fallbackScript = document.createElement('script');
+          fallbackScript.src = 'https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js';
+          document.head.appendChild(fallbackScript);
+        }}
       />
       <div dangerouslySetInnerHTML={{ __html: cleanBodyContent }} />
       {/* Inline app script — runs after DOM is ready and Web3 is loaded */}
