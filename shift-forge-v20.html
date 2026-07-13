@@ -353,6 +353,29 @@
   .nft-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .nft-thumb .nft-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.75); color: #fff; font-size: 9px; padding: 3px 5px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; opacity: 0; transition: opacity 0.2s; }
   .nft-thumb:hover .nft-name { opacity: 1; }
+  .nft-thumb.forged {
+    cursor: not-allowed;
+    filter: grayscale(80%) brightness(60%);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .nft-thumb.forged:hover {
+    border-color: rgba(239, 68, 68, 0.6);
+    transform: none;
+  }
+  .forged-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    color: #ef4444;
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+  }
   .nft-loading { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
   .nft-empty { text-align: center; padding: 20px; color: var(--text-dim); font-size: 13px; }
 
@@ -1464,16 +1487,24 @@
 
         group.items.forEach(function(nft){
           var thumb = document.createElement('div');
-          thumb.className = 'nft-thumb';
+          thumb.className = nft.forged ? 'nft-thumb forged' : 'nft-thumb';
           thumb.setAttribute('data-mint', nft.mint);
           thumb.setAttribute('data-name', nft.name || '');
           thumb.setAttribute('data-image', cleanImageURL(nft.image || ''));
           thumb.setAttribute('data-collection', nft.collectionName || nft.collection || '');
 
           var imgSrc = cleanImageURL(nft.image || '');
+          var overlayHtml = nft.forged ? '<div class="forged-overlay">🔒 FORGED</div>' : '';
           thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="this.style.display=\'none\'">' +
-            '<div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>';
-          thumb.addEventListener('click', function(){ selectNFT(nft.mint, thumb); });
+            '<div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>' + overlayHtml;
+          
+          if (nft.forged) {
+            thumb.addEventListener('click', function(){
+              alert('This NFT has already been forged into a SHIFT Playable card.');
+            });
+          } else {
+            thumb.addEventListener('click', function(){ selectNFT(nft.mint, thumb); });
+          }
           itemsGrid.appendChild(thumb);
         });
 

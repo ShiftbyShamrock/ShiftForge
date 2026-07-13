@@ -1,0 +1,20 @@
+# netlify.toml — SHIFT Forge backend
+[build]
+  functions = "netlify/functions"
+  publish = "public"
+
+# Clean /api/* routes for the frontend
+[[redirects]]
+  from = "/api/forge-analyze"
+  to = "/.netlify/functions/forge-analyze"
+  status = 200
+
+[[redirects]]
+  from = "/api/generate-art"
+  to = "/.netlify/functions/generate-art"
+  status = 200
+
+[[redirects]]
+  from = "/api/verify-ownership"
+  to = "/.netlify/functions/verify-ownership"
+  status = 200

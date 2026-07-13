@@ -102,6 +102,37 @@ export async function POST(request: Request) {
       }
     }
 
+    // Query Pinata for all existing forged markers so we can flag them in the UI
+    const pinataJwt = process.env.PINATA_JWT;
+    const forgedMints = new Set<string>();
+    if (pinataJwt) {
+      try {
+        // Query Pinata for pinned items with metadata name prefix 'shift-forge-'
+        const pinListUrl = `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=shift-forge-&pageLimit=1000`;
+        const pinListRes = await fetch(pinListUrl, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${pinataJwt}`,
+          },
+        });
+        if (pinListRes.ok) {
+          const pinListData = await pinListRes.json();
+          const rows = pinListData.rows || [];
+          for (const row of rows) {
+            const name = row.metadata?.name || '';
+            if (name.startsWith('shift-forge-')) {
+              const mint = name.replace('shift-forge-', '');
+              if (mint) {
+                forgedMints.add(mint);
+              }
+            }
+          }
+        }
+      } catch (pinataErr) {
+        console.error('Failed to fetch forge markers in wallet-nfts route:', pinataErr);
+      }
+    }
+
     // Map to a slim format the frontend expects
     const nfts = allItems
       .filter((item: any) => {
@@ -129,6 +160,7 @@ export async function POST(request: Request) {
           collection: collectionAddress,
           collectionName: collectionName,
           interface: item.interface || 'unknown',
+          forged: forgedMints.has(item.id),
         };
       });
 

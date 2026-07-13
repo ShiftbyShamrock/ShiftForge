@@ -1,0 +1,9 @@
+{
+  "name": "shift-forge-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serverless backend for the SHIFT Forge: Claude analysis proxy, art generation proxy, and on-chain NFT ownership verification.",
+  "engines": {
+    "node": ">=18"
+  }
+}

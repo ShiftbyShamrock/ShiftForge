@@ -183,6 +183,34 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Step 0: Server-side Duplicate Forge Check ---
+    const sourceNft = card.ownership?.nft || card.nftMint || '';
+    if (sourceNft && pinataJwt) {
+      const markerName = `shift-forge-${sourceNft}`;
+      const searchUrl = `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=${encodeURIComponent(markerName)}&pageLimit=1`;
+      try {
+        const checkRes = await fetch(searchUrl, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${pinataJwt}`,
+          },
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if ((checkData.rows?.length ?? 0) > 0) {
+            return NextResponse.json(
+              { error: 'This NFT has already been forged into a SHIFT Playable card.' },
+              { status: 400 }
+            );
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to perform server-side duplicate forge check:', err);
+        // Fallback: do not completely block minting if Pinata API is down/rate-limited,
+        // but log the error for diagnostics.
+      }
+    }
+
     // --- Step 1: Upload Card Image to Pinata IPFS ---
     let imageUrl = '';
     const imageDataUrl = card.imageDataUrl;
@@ -329,7 +357,6 @@ export async function POST(request: Request) {
     }
 
     // --- Step 4: Pin a forge marker to Pinata to prevent duplicate mints ---
-    const sourceNft = card.ownership?.nft || card.nftMint || '';
     if (sourceNft && pinataJwt) {
       try {
         const markerBody = {
