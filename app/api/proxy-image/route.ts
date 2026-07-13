@@ -66,9 +66,7 @@ function getResilientUrl(url: string): string {
     const restOfPath = url.substring(txIdIndex + txId.length);
     
     // Construct the working sandboxed permagate.io URL
-    const rewritten = `https://${subdomain}.permagate.io/${txId}${restOfPath}`;
-    console.log(`[Proxy Resilient] Rewrote URL from ${url} to ${rewritten}`);
-    return rewritten;
+    return `https://${subdomain}.permagate.io/${txId}${restOfPath}`;
   } catch (e) {
     console.error('[Proxy Resilient] Failed to derive sandboxed URL:', e);
     return url;
@@ -76,30 +74,54 @@ function getResilientUrl(url: string): string {
 }
 
 /**
- * Resilient image fetch handler.
+ * Resilient image fetch handler with multi-gateway fallback.
  */
 async function fetchResilientImage(url: string) {
   const targetUrl = getResilientUrl(url);
 
-  let response = await fetch(targetUrl, {
+  // Try 1: Permagate.io Sandboxed Subdomain
+  if (targetUrl !== url) {
+    try {
+      const response = await fetch(targetUrl, {
+        headers: {
+          'Accept': 'image/*',
+          'User-Agent': 'SHIFT-Forge/1.0',
+        },
+      });
+      if (response.ok) return response;
+      console.warn(`[Proxy Image] Permagate sandboxed URL returned status ${response.status}. Trying datasprite cdn...`);
+    } catch (err: any) {
+      console.warn(`[Proxy Image] Permagate sandboxed fetch failed: ${err.message}. Trying datasprite cdn...`);
+    }
+  }
+
+  // Try 2: Datasprite CDN Sandboxed Subdomain
+  const dataspriteUrl = targetUrl.replace('.permagate.io', '.legacy.datasprite-cdn.com');
+  if (dataspriteUrl !== targetUrl) {
+    try {
+      const response = await fetch(dataspriteUrl, {
+        headers: {
+          'Accept': 'image/*',
+          'User-Agent': 'SHIFT-Forge/1.0',
+        },
+      });
+      if (response.ok) {
+        console.log(`[Proxy Image] Success fetching from datasprite cdn: ${dataspriteUrl}`);
+        return response;
+      }
+      console.warn(`[Proxy Image] Datasprite URL returned status ${response.status}. Trying original URL...`);
+    } catch (err: any) {
+      console.warn(`[Proxy Image] Datasprite fetch failed: ${err.message}. Trying original URL...`);
+    }
+  }
+
+  // Try 3: Original URL direct fetch
+  return await fetch(url, {
     headers: {
       'Accept': 'image/*',
       'User-Agent': 'SHIFT-Forge/1.0',
-    },
+    }
   });
-
-  // Fallback: If rewritten URL fails, try fetching the original URL directly
-  if (!response.ok && targetUrl !== url) {
-    console.warn(`[Proxy Image] Resilient URL failed with status ${response.status}. Retrying original URL: ${url}`);
-    response = await fetch(url, {
-      headers: {
-        'Accept': 'image/*',
-        'User-Agent': 'SHIFT-Forge/1.0',
-      }
-    });
-  }
-
-  return response;
 }
 
 /**
@@ -164,7 +186,12 @@ export async function GET(request: Request) {
     const response = await fetchResilientImage(url);
 
     if (!response.ok) {
-      return new Response(`Failed to fetch image: ${response.status}`, { status: response.status });
+      return new Response(`Failed to fetch image: ${response.status}`, { 
+        status: response.status,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        }
+      });
     }
 
     const contentType = response.headers.get('content-type') || 'image/png';
@@ -179,6 +206,11 @@ export async function GET(request: Request) {
     });
   } catch (err: any) {
     console.error('[Proxy Image GET] error:', err);
-    return new Response(err.message || 'Failed to proxy image', { status: 500 });
+    return new Response(err.message || 'Failed to proxy image', { 
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      }
+    });
   }
 }
