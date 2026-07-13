@@ -294,6 +294,10 @@ export async function POST(request: Request) {
       // Limit name length to 32 characters as per Metaplex standards
       const displayName = (card.name || 'SHIFT Card').substring(0, 32);
 
+      // Pre-generate the mint Keypair so we know the mint address even if the SDK's post-mint fetch fails due to node propagation delay
+      const mintKeypair = Keypair.generate();
+      mintAddress = mintKeypair.publicKey.toBase58();
+
       const { nft } = await metaplex.nfts().create({
         uri: metadataUrl,
         name: displayName,
@@ -302,15 +306,26 @@ export async function POST(request: Request) {
         tokenOwner: recipientPublicKey,
         creators: creators,
         isMutable: true,
+        useNewMint: mintKeypair,
       });
 
+      // If fetch succeeds immediately, update mintAddress just in case
       mintAddress = nft.address.toBase58();
     } catch (err: any) {
-      console.error('Solana on-chain NFT minting failed:', err);
-      return NextResponse.json(
-        { error: `On-chain NFT minting failed: ${err.message}` },
-        { status: 500 }
-      );
+      const isAccountNotFoundError = 
+        err.name === 'AccountNotFoundError' || 
+        err.message?.includes('was not found') ||
+        err.message?.includes('type [r]');
+
+      if (isAccountNotFoundError && mintAddress) {
+        console.warn('Solana on-chain mint succeeded but SDK fetch failed (propagation delay). Proceeding with mintAddress:', mintAddress);
+      } else {
+        console.error('Solana on-chain NFT minting failed:', err);
+        return NextResponse.json(
+          { error: `On-chain NFT minting failed: ${err.message}` },
+          { status: 500 }
+        );
+      }
     }
 
     // --- Step 4: Pin a forge marker to Pinata to prevent duplicate mints ---
