@@ -2118,11 +2118,11 @@
     lvEl.className = 'evo-lv' + (v.ascended ? ' asc' : '');
     lvEl.innerHTML = '<div class="n">' + (v.ascended ? '✦ ' : '') + 'Lv ' + evoLevel + '</div><div class="t">' + evoTitle(evoLevel) + '</div>';
     $('evoMiles').innerHTML =
-      '<div class="' + (evoLevel>=1?'got':'not') + '">Level 1 — Base card (<b>FORGED PLAYABLE MINT</b>)</div>' +
-      '<div class="' + (evoLevel>=2?'got':'not') + '">Level 2 — +1 Power (In-game XP)</div>' +
-      '<div class="' + (evoLevel>=3?'got':'not') + '">Level 3 — Passive upgrade (In-game XP)</div>' +
-      '<div class="' + (evoLevel>=4?'got':'not') + '">Level 4 — +1 Health (In-game XP)</div>' +
-      '<div class="not" style="color:var(--red);font-weight:bold;">Level 5 — 🏆 Max XP · Ultimate unlocked (In-game only — Cannot be forged)</div>';
+      '<div class="' + (evoLevel>=1?'got':'not') + '">Level 1 — Base card (<b>FORGED SHIFT PLAYABLE MINT</b>)</div>' +
+      '<div class="' + (evoLevel>=2?'got':'not') + '">Level 2 — +1 Power (Unlock in the game)</div>' +
+      '<div class="' + (evoLevel>=3?'got':'not') + '">Level 3 — Passive upgrade (Unlock in the game)</div>' +
+      '<div class="' + (evoLevel>=4?'got':'not') + '">Level 4 — +1 Health (Unlock in the game)</div>' +
+      '<div class="not" style="color:var(--gold);font-weight:bold;">Level 5 — 🏆 Max XP · Ultimate unlocked (Unlock in the game)</div>';
   }
 
   // ═══════════ FRAMES ═══════════
@@ -2954,12 +2954,22 @@
             ? ' — <span style="color:#a8d97a">max level reached, ultimate unlocked. Ready for AI Arena.</span>' 
             : ' — ' + (5 - (d.evoLevel||d.level)) + ' level(s) from the Level 5 Ready for AI Arena.') + '</div>' +
         '<div style="height:1px; background:rgba(255,255,255,0.08); margin:16px 0;"></div>' +
-        '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:10px; font-weight:700;">Turn structure reference</h3>' +
-        '<div style="display:flex; flex-direction:column; gap:6px; color:var(--text-dim);">' +
-          '<div>1. Draw Phase</div>' +
-          '<div>2. Main Phase I — play SHIFT Spells, Forged NFTs, Items, declare alliances</div>' +
-          '<div>3. Battle Phase — Antihero abilities resolve, Heroes attack</div>' +
-          '<div>4. End Step — resolve ongoing effects</div>' +
+        '<div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">' +
+          '<div style="flex:1; min-width:200px; background:rgba(243,210,122,0.08); border:1px solid rgba(243,210,122,0.35); border-radius:8px; padding:12px 14px; display:flex; align-items:center; gap:12px;">' +
+            '<div style="font-size:32px; filter:drop-shadow(0 0 8px rgba(243,210,122,0.6));">🐉</div>' +
+            '<div style="font-size:13.5px; font-weight:700; color:var(--gold); line-height:1.35; font-family:var(--font-head); letter-spacing:0.02em;">' +
+              'Play Shift to UNLOCK a Dragon with Flying' +
+            '</div>' +
+          '</div>' +
+          '<div style="flex:1; min-width:200px;">' +
+            '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:8px; font-weight:700;">Turn structure reference</h3>' +
+            '<div style="display:flex; flex-direction:column; gap:4px; color:var(--text-dim); font-size:13px; line-height:1.4;">' +
+              '<div>1. Draw Phase</div>' +
+              '<div>2. Main Phase I — play SHIFT Spells, Forged NFTs, Items, declare alliances</div>' +
+              '<div>3. Battle Phase — Antihero abilities resolve, Heroes attack</div>' +
+              '<div>4. End Step — resolve ongoing effects</div>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       (vt || nt || at ? '<div class="dblock"><h3>Visual & detected traits</h3><div class="vt-wrap">'+at+vt+nt+'</div></div>' : '');
