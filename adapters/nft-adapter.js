@@ -115,6 +115,8 @@ function buildAttributes(card) {
   pushAttr(attrs, 'Affinity', card.affinity);
   pushAttr(attrs, 'Set', card.set?.code);
   pushAttr(attrs, 'Collector Number', card.collectorNumber);
+  pushAttr(attrs, 'Current Level', card.objective?.currentLevel ?? card.level ?? 1, 'number');
+  pushAttr(attrs, 'Max Level', card.objective?.maxLevel ?? 5, 'number');
 
   // ── Edition / Finish ─────────────────────────────────────────────────────
   if (card.edition) {

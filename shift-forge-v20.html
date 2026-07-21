@@ -2085,7 +2085,7 @@
   }
 
   // ═══════════ EVOLUTION CONTROLS ═══════════
-  $('evoUp').addEventListener('click', function(){ if(evoLevel < 10){ evoLevel++; refreshAll(); } });
+  $('evoUp').addEventListener('click', function(){ if(evoLevel < 4){ evoLevel++; refreshAll(); } });
   $('evoDown').addEventListener('click', function(){ if(evoLevel > 1){ evoLevel--; refreshAll(); } });
 
   function refreshAll(){
@@ -2112,18 +2112,17 @@
   }
 
   function renderEvo(v){
-    $('evoUp').disabled = evoLevel >= 10;
+    $('evoUp').disabled = evoLevel >= 4;
     $('evoDown').disabled = evoLevel <= 1;
     var lvEl = $('evoLv');
     lvEl.className = 'evo-lv' + (v.ascended ? ' asc' : '');
     lvEl.innerHTML = '<div class="n">' + (v.ascended ? '✦ ' : '') + 'Lv ' + evoLevel + '</div><div class="t">' + evoTitle(evoLevel) + '</div>';
     $('evoMiles').innerHTML =
-      '<div class="' + (evoLevel>=1?'got':'not') + '">Level 1 — Base card</div>' +
-      '<div class="' + (evoLevel>=2?'got':'not') + '">Level 2 — +1 Power</div>' +
-      '<div class="' + (evoLevel>=3?'got':'not') + '">Level 3 — Passive upgrade</div>' +
-      '<div class="' + (evoLevel>=4?'got':'not') + '">Level 4 — +1 Health</div>' +
-      '<div class="' + (evoLevel>=5?'got':'not') + '">Level 5 — 🏆 Max XP · Ultimate unlocked · <b>WIN THRESHOLD</b></div>' +
-      '<div class="' + (evoLevel>=6?'got':'not') + '">Level 6+ — Ascended form: ' + v.ascendedForm + '</div>';
+      '<div class="' + (evoLevel>=1?'got':'not') + '">Level 1 — Base card (<b>FORGED PLAYABLE MINT</b>)</div>' +
+      '<div class="' + (evoLevel>=2?'got':'not') + '">Level 2 — +1 Power (In-game XP)</div>' +
+      '<div class="' + (evoLevel>=3?'got':'not') + '">Level 3 — Passive upgrade (In-game XP)</div>' +
+      '<div class="' + (evoLevel>=4?'got':'not') + '">Level 4 — +1 Health (In-game XP)</div>' +
+      '<div class="not" style="color:var(--red);font-weight:bold;">Level 5 — 🏆 Max XP · Ultimate unlocked (In-game only — Cannot be forged)</div>';
   }
 
   // ═══════════ FRAMES ═══════════
@@ -2968,7 +2967,8 @@
 
   // ═══════════ MINT (pay SHIFT → playable card NFT) ═══════════
   function buildCardJSON(){
-    var v = evolvedView(cardData, evoLevel);
+    // All minted SHIFT Playables are Level 1 Base Cards
+    var v = evolvedView(cardData, 1);
     var out = {};
     Object.keys(v).forEach(function(k){ if(k !== 'forgeScan' && k !== 'recognizedCollection') out[k] = v[k]; });
     var aff = AFFINITIES[v.affinity];
@@ -2980,15 +2980,17 @@
     out.objective = {
       goal: 'Level up character XP by surviving encounters',
       winConditions: ['Reach Level 5 (max XP) before opponents', 'Defeat the final boss'],
-      maxLevel: 5, currentLevel: v.level, xpValue: v.xpValue,
-      atWinThreshold: (v.evoLevel || v.level) >= 5
+      maxLevel: 5, currentLevel: 1, xpValue: 0,
+      atWinThreshold: false
     };
     out.stats = {
       attack: v.power,
       defense: 0,
       hp: v.health
     };
+    drawCard(v, 0);
     out.imageDataUrl = $('cardCanvas').toDataURL('image/png');
+    refreshAll();
     return out;
   }
 
@@ -3309,7 +3311,7 @@
 
   $('dlJsonBtn').addEventListener('click', function(){
     if(!cardData) return;
-    var v = evolvedView(cardData, evoLevel);
+    var v = evolvedView(cardData, 1);
     var out = {};
     Object.keys(v).forEach(function(k){ if(k !== 'forgeScan' && k !== 'recognizedCollection') out[k] = v[k]; });
     var aff = AFFINITIES[v.affinity];
@@ -3330,9 +3332,9 @@
       goal: 'Level up character XP by surviving encounters',
       winConditions: ['Reach Level 5 (max XP) before opponents', 'Defeat the final boss'],
       maxLevel: 5,
-      currentLevel: v.level,
-      xpValue: v.xpValue,
-      atWinThreshold: (v.evoLevel || v.level) >= 5
+      currentLevel: 1,
+      xpValue: 0,
+      atWinThreshold: false
     };
     out.artSource = usedGeneratedArt ? 'ai-generated' : 'original-nft';
     out.rarityArtTreatment = ({Common:'bronze-patina',Uncommon:'silver-tone',Rare:'golden-glow',Epic:'arcane-purple-radiance',Legendary:'rainbow-foil-sheen',Mythic:'animated-cosmic-aurora'})[v.rarity];
@@ -3344,7 +3346,7 @@
     var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
     var link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'shift-' + (v.displayName || 'card').replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-lv' + evoLevel + '.json';
+    link.download = 'shift-' + (v.displayName || 'card').replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '-lv1.json';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

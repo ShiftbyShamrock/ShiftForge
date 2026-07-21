@@ -255,6 +255,24 @@ export async function POST(request: Request) {
     }
 
     // --- Step 2: Format & Upload Metaplex Metadata JSON to Pinata IPFS ---
+    // Enforce all minted SHIFT playables to be Level 1 Base Cards
+    if (card.objective) {
+      card.objective.currentLevel = 1;
+      card.objective.atWinThreshold = false;
+    }
+    card.level = 1;
+    card.evoLevel = 1;
+    if (typeof card.basePower === 'number') {
+      card.stats = card.stats || {};
+      card.stats.attack = card.basePower;
+      card.power = card.basePower;
+    }
+    if (typeof card.baseHealth === 'number') {
+      card.stats = card.stats || {};
+      card.stats.hp = card.baseHealth;
+      card.health = card.baseHealth;
+    }
+
     let metadataUrl = '';
     let metaplexMetadata: any;
 
