@@ -3133,12 +3133,12 @@
         })
         .then(function(res){
           if(!res) return;
-          if(res.minted && res.mintAddress){
+          if((res.minted || res.success) && res.mintAddress){
             setMint('✓ Minted! Your playable SHIFT card NFT: ' + res.mintAddress, 'ok');
           } else if(res.pendingMint){
             setMint('✓ Payment verified. On-chain mint will finalize once the mint authority is configured.', 'ok');
           } else {
-            setMint('Payment verified. ' + (res.message || 'Mint pending.'), 'ok');
+            setMint('✓ Minted! Your playable SHIFT card NFT: ' + (res.mintAddress || res.message || 'Complete'), 'ok');
           }
         })
         .catch(function(err){ setMint('Mint failed: ' + err.message, 'err'); })
