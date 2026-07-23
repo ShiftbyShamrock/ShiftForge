@@ -3000,6 +3000,7 @@
     };
     drawCard(v, 0);
     out.imageDataUrl = $('cardCanvas').toDataURL('image/png');
+    out.nftMint = selectedNftMint || '';
     refreshAll();
     return out;
   }
@@ -3147,6 +3148,28 @@
           if(!res) return;
           if((res.minted || res.success) && res.mintAddress){
             setMint('✓ Minted! Your playable SHIFT card NFT: ' + res.mintAddress, 'ok');
+            // Mark this NFT as forged in the grid so it can't be minted again
+            var forgedMint = selectedNftMint;
+            if(forgedMint){
+              var allThumbs = document.querySelectorAll('.nft-thumb[data-mint="' + forgedMint + '"]');
+              allThumbs.forEach(function(thumb){
+                thumb.className = 'nft-thumb forged';
+                thumb.classList.remove('selected');
+                if(!thumb.querySelector('.forged-overlay')){
+                  var overlay = document.createElement('div');
+                  overlay.className = 'forged-overlay';
+                  overlay.textContent = '🔒 FORGED';
+                  thumb.appendChild(overlay);
+                }
+                // Replace click handler to show alert instead of selecting
+                var newThumb = thumb.cloneNode(true);
+                newThumb.addEventListener('click', function(){
+                  alert('This NFT has already been forged into a SHIFT Playable card.');
+                });
+                thumb.parentNode.replaceChild(newThumb, thumb);
+              });
+              selectedNftMint = '';
+            }
           } else if(res.pendingMint){
             setMint('✓ Payment verified. On-chain mint will finalize once the mint authority is configured.', 'ok');
           } else {

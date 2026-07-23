@@ -33,6 +33,10 @@ const RPC_ENDPOINTS = [
   'https://solana-mainnet.g.allnodes.com',
 ];
 
+// In-memory lock set to prevent race condition duplicate mints
+// (protects the window between Pinata check and Pinata marker write)
+const mintingInProgress = new Set<string>();
+
 async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>): Promise<T> {
   let lastError: any = null;
   for (const rpcUrl of RPC_ENDPOINTS) {
@@ -244,8 +248,17 @@ export async function POST(request: Request) {
     }
 
     // --- Step 0: Server-side Duplicate Forge Check ---
-    const sourceNft = card.ownership?.nft || card.nftMint || '';
+    // Prioritize card.nftMint (explicit mint address from client) over ownership.nft (may be name)
+    const sourceNft = card.nftMint || card.ownership?.nft || '';
     if (sourceNft && pinataJwt) {
+      // Check in-memory lock first (race condition protection)
+      if (mintingInProgress.has(sourceNft)) {
+        return NextResponse.json(
+          { error: 'This NFT is currently being forged. Please wait for the mint to complete.' },
+          { status: 409 }
+        );
+      }
+
       const markerName = `shift-forge-${sourceNft}`;
       const searchUrl = `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=${encodeURIComponent(markerName)}&pageLimit=1`;
       try {
@@ -269,6 +282,9 @@ export async function POST(request: Request) {
         // Fallback: do not completely block minting if Pinata API is down/rate-limited,
         // but log the error for diagnostics.
       }
+
+      // Add to in-memory lock set — cleared after mint completes or fails
+      mintingInProgress.add(sourceNft);
     }
 
     // --- Step 1: Upload Card Image to Pinata IPFS ---
@@ -473,6 +489,7 @@ export async function POST(request: Request) {
         console.warn('Solana on-chain mint likely succeeded but post-mint verification failed (RPC/network error). Proceeding with pre-generated mintAddress:', mintAddress, 'Error:', err.message);
       } else {
         console.error('Solana on-chain NFT minting failed:', err);
+        if (sourceNft) mintingInProgress.delete(sourceNft);
         return NextResponse.json(
           { error: `On-chain NFT minting failed: ${err.message}` },
           { status: 500 }
@@ -506,6 +523,9 @@ export async function POST(request: Request) {
       } catch (markerErr) {
         // Non-fatal — mint succeeded, marker is just a convenience
         console.warn('Failed to pin forge marker:', markerErr);
+      } finally {
+        // Release the in-memory lock now that the marker is written (or attempted)
+        mintingInProgress.delete(sourceNft);
       }
     }
 
@@ -521,6 +541,12 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';
     console.error('Unexpected error in mint-card route:', error);
+    // Release the in-memory lock on unexpected errors
+    try {
+      const body2 = await request.clone().json().catch(() => null);
+      const failedNft = body2?.card?.nftMint || body2?.card?.ownership?.nft || '';
+      if (failedNft) mintingInProgress.delete(failedNft);
+    } catch { /* ignore cleanup errors */ }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
