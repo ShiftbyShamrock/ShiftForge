@@ -3236,27 +3236,50 @@
       var transferIx = createTransferIx(fromATA, toATA, walletPubkey, amount);
 
       // Check if treasury ATA exists; if not, create it
-      conn.getAccountInfo(toATA).then(function(acctInfo){
-        var tx = new Web3.Transaction();
-        if(!acctInfo){
-          tx.add(createATAIx(walletPubkey, toATA, treasuryPubkey, mintPubkey));
+      var endpoints = [
+        quote.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-mainnet.g.allnodes.com'
+      ];
+
+      function tryRpc(index) {
+        if (index >= endpoints.length) {
+          return Promise.reject(new Error('All client RPC endpoints failed.'));
         }
-        tx.add(transferIx);
-        return conn.getLatestBlockhash('confirmed').then(function(bh){
-          tx.recentBlockhash = bh.blockhash;
-          tx.feePayer = walletPubkey;
-          return prov.signAndSendTransaction(tx);
-        });
-      }).then(function(result){
-        var sig = result.signature || result;
-        // Wait for confirmation
-        conn.confirmTransaction(sig, 'confirmed').then(function(){
-          resolve(sig);
-        }).catch(function(){
-          // Even if confirm times out, the signature was submitted
-          resolve(sig);
-        });
-      }).catch(function(err){
+        var conn = new Web3.Connection(endpoints[index], 'confirmed');
+        return conn.getAccountInfo(toATA)
+          .catch(function(err){
+            console.warn('getAccountInfo failed on client RPC index ' + index + ':', err);
+            // If getAccountInfo failed, assume the account exists to prevent blocking the transaction
+            return { data: new Uint8Array(0) };
+          })
+          .then(function(acctInfo){
+            var tx = new Web3.Transaction();
+            if(!acctInfo || !acctInfo.data){
+              tx.add(createATAIx(walletPubkey, toATA, treasuryPubkey, mintPubkey));
+            }
+            tx.add(transferIx);
+            return conn.getLatestBlockhash('confirmed').then(function(bh){
+              tx.recentBlockhash = bh.blockhash;
+              tx.feePayer = walletPubkey;
+              return prov.signAndSendTransaction(tx);
+            });
+          })
+          .then(function(result){
+            var sig = result.signature || result;
+            // Wait for confirmation using same connection
+            return conn.confirmTransaction(sig, 'confirmed')
+              .then(function(){ return sig; })
+              .catch(function(){ return sig; }); // Resolve sig even if confirmation times out
+          })
+          .catch(function(err){
+            console.warn('RPC action failed on index ' + index + ':', err);
+            // Try next RPC endpoint
+            return tryRpc(index + 1);
+          });
+      }
+
+      tryRpc(0).then(resolve).catch(function(err){
         reject(new Error('SHIFT payment failed: ' + (err.message || err)));
       });
     });
@@ -3289,19 +3312,33 @@
         })
       );
 
-      c.getLatestBlockhash()
-        .then(function(bh){
-          tx.recentBlockhash = bh.blockhash;
-          tx.feePayer = wPub;
-          return p.signAndSendTransaction(tx);
-        })
-        .then(function(txnRes){
-          var sig = txnRes.signature || txnRes;
-          res(sig);
-        })
-        .catch(function(e){
-          rej(e);
-        });
+      var endpoints = [
+        q.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-mainnet.g.allnodes.com'
+      ];
+
+      function tryRpc(index) {
+        if (index >= endpoints.length) {
+          return Promise.reject(new Error('All client RPC endpoints failed.'));
+        }
+        var c = new W3.Connection(endpoints[index], 'confirmed');
+        return c.getLatestBlockhash('confirmed')
+          .then(function(bh){
+            tx.recentBlockhash = bh.blockhash;
+            tx.feePayer = wPub;
+            return p.signAndSendTransaction(tx);
+          })
+          .then(function(txnRes){
+            return txnRes.signature || txnRes;
+          })
+          .catch(function(err){
+            console.warn('paySOL RPC action failed on index ' + index + ':', err);
+            return tryRpc(index + 1);
+          });
+      }
+
+      tryRpc(0).then(res).catch(rej);
     });
   }
 

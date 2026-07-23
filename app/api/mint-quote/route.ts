@@ -25,7 +25,25 @@ const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKT
 const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
 const SHIFT_MINT_FEE = 250;
 const SOL_MINT_FEE = 0.25;
-const RPC_URL = process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe';
+const RPC_ENDPOINTS = [
+  process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+  'https://api.mainnet-beta.solana.com',
+  'https://solana-mainnet.g.allnodes.com',
+];
+
+async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>): Promise<T> {
+  let lastError: any = null;
+  for (const rpcUrl of RPC_ENDPOINTS) {
+    try {
+      const conn = new Connection(rpcUrl, 'confirmed');
+      return await queryFn(conn);
+    } catch (err: any) {
+      console.warn(`RPC call failed on ${rpcUrl}: ${err.message || err}. Trying next endpoint...`);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All Solana RPC endpoints failed.');
+}
 
 export async function POST(request: Request) {
   try {
@@ -33,14 +51,14 @@ export async function POST(request: Request) {
     const { wallet } = body as { wallet?: string };
 
     const configured = Boolean(SHIFT_TOKEN_MINT && SHIFT_TREASURY && SHIFT_MINT_FEE);
-
-    const connection = new Connection(RPC_URL, 'confirmed');
     const mintPubkey = new PublicKey(SHIFT_TOKEN_MINT);
 
-    // Query the mint account to get the actual decimals
+    // Query the mint account to get the actual decimals using RPC fallback
     let decimals = 9;
     try {
-      const mintInfo = await connection.getParsedAccountInfo(mintPubkey);
+      const mintInfo = await runWithRpcFallback(async (conn) => {
+        return await conn.getParsedAccountInfo(mintPubkey);
+      });
       if (
         mintInfo.value &&
         'parsed' in mintInfo.value.data &&
@@ -61,25 +79,28 @@ export async function POST(request: Request) {
       try {
         const walletPubkey = new PublicKey(wallet);
 
-        // Fetch native SOL balance
-        const solBalance = await connection.getBalance(walletPubkey);
-        walletBalanceSol = solBalance / 1e9;
-        canAffordSol = walletBalanceSol >= SOL_MINT_FEE;
-
-        // Fetch token balance
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPubkey, {
-          mint: mintPubkey,
+        // Fetch native SOL balance and token accounts using resilient RPC fallback
+        const result = await runWithRpcFallback(async (conn) => {
+          const solBalance = await conn.getBalance(walletPubkey);
+          const tokenAccounts = await conn.getParsedTokenAccountsByOwner(walletPubkey, {
+            mint: mintPubkey,
+          });
+          return { solBalance, tokenAccounts };
         });
 
+        walletBalanceSol = result.solBalance / 1e9;
+        canAffordSol = walletBalanceSol >= SOL_MINT_FEE;
+
         walletBalance = 0;
-        for (const { account } of tokenAccounts.value) {
+        for (const { account } of result.tokenAccounts.value) {
           const parsed = account.data.parsed;
           const amount = parsed?.info?.tokenAmount?.uiAmount ?? 0;
           walletBalance += amount;
         }
 
         canAfford = walletBalance >= SHIFT_MINT_FEE;
-      } catch {
+      } catch (err: any) {
+        console.error('Failed to parse wallet info using RPC fallback:', err);
         // Wallet query failed — return nulls
         walletBalance = null;
         canAfford = null;

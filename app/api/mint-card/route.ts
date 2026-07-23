@@ -27,10 +27,25 @@ import bs58 from 'bs58';
 import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
-const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
-const SHIFT_MINT_FEE = 250;
-const SOL_MINT_FEE = 0.25;
-const RPC_URL = process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe';
+const RPC_ENDPOINTS = [
+  process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+  'https://api.mainnet-beta.solana.com',
+  'https://solana-mainnet.g.allnodes.com',
+];
+
+async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>): Promise<T> {
+  let lastError: any = null;
+  for (const rpcUrl of RPC_ENDPOINTS) {
+    try {
+      const conn = new Connection(rpcUrl, 'confirmed');
+      return await queryFn(conn);
+    } catch (err: any) {
+      console.warn(`RPC call failed on ${rpcUrl}: ${err.message || err}. Trying next endpoint...`);
+      lastError = err;
+    }
+  }
+  throw lastError || new Error('All Solana RPC endpoints failed.');
+}
 
 /**
  * Utility to decode and construct the mint authority keypair.
@@ -110,12 +125,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const connection = new Connection(RPC_URL, 'confirmed');
+    const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
+    const SHIFT_MINT_FEE = 250;
+    const SOL_MINT_FEE = 0.25;
 
-    // --- Fetch the on-chain transaction ---
-    const tx = await connection.getTransaction(signature, {
-      commitment: 'confirmed',
-      maxSupportedTransactionVersion: 0,
+    // --- Fetch the on-chain transaction using RPC fallback ---
+    const tx = await runWithRpcFallback(async (conn) => {
+      return await conn.getTransaction(signature, {
+        commitment: 'confirmed',
+        maxSupportedTransactionVersion: 0,
+      });
     });
 
     if (!tx) {
@@ -347,15 +366,18 @@ export async function POST(request: Request) {
       const mintKeypair = Keypair.generate();
       mintAddress = mintKeypair.publicKey.toBase58();
 
-      const { nft } = await metaplex.nfts().create({
-        uri: metadataUrl,
-        name: displayName,
-        sellerFeeBasisPoints: metaplexMetadata.seller_fee_basis_points ?? 500,
-        symbol: 'SHIFT',
-        tokenOwner: recipientPublicKey,
-        creators: creators,
-        isMutable: true,
-        useNewMint: mintKeypair,
+      const { nft } = await runWithRpcFallback(async (conn) => {
+        const metaplex = Metaplex.make(conn).use(keypairIdentity(mintAuthorityKeypair));
+        return await metaplex.nfts().create({
+          uri: metadataUrl,
+          name: displayName,
+          sellerFeeBasisPoints: metaplexMetadata.seller_fee_basis_points ?? 500,
+          symbol: 'SHIFT',
+          tokenOwner: recipientPublicKey,
+          creators: creators,
+          isMutable: true,
+          useNewMint: mintKeypair,
+        });
       });
 
       // If fetch succeeds immediately, update mintAddress just in case
