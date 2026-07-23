@@ -343,7 +343,6 @@ export async function POST(request: Request) {
     // --- Step 3: Mint the NFT on Solana using Metaplex SDK ---
     let mintAddress = '';
     try {
-      const metaplex = Metaplex.make(connection).use(keypairIdentity(mintAuthorityKeypair));
       const recipientPublicKey = new PublicKey(wallet);
 
       // Process creators array mapping (addresses must be PublicKeys)
