@@ -405,12 +405,19 @@ export async function POST(request: Request) {
                     extension: 'json',
                   } as any;
                 }
-                const res = await fetchWithRetry(uri, { method: 'GET' });
-                const arrayBuffer = await res.arrayBuffer();
+                // Return a mock small 1x1 empty PNG buffer for any other URI
+                // (e.g. image URLs) so we never touch the network!
+                const mockImageBuffer = Buffer.from(
+                  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+                  'base64'
+                );
                 return {
-                  buffer: Buffer.from(arrayBuffer),
-                  fileName: 'file',
-                  mimeType: res.headers.get('content-type') || 'application/octet-stream',
+                  buffer: mockImageBuffer,
+                  fileName: 'file.png',
+                  mimeType: 'image/png',
+                  displayName: 'Image',
+                  uniqueName: 'file.png',
+                  extension: 'png',
                 } as any;
               }
             });
