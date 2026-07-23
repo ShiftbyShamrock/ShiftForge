@@ -47,6 +47,25 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
   throw lastError || new Error('All Solana RPC endpoints failed.');
 }
 
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delay = 1000): Promise<Response> {
+  let lastError: any = null;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+      if (res.status >= 400 && res.status < 500) return res;
+      lastError = new Error(`HTTP error ${res.status}: ${await res.text()}`);
+    } catch (err: any) {
+      console.warn(`Fetch failed for ${url} (attempt ${i + 1}/${retries}): ${err.message || err}`);
+      lastError = err;
+    }
+    if (i < retries - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError || new Error(`Failed to fetch ${url} after ${retries} attempts.`);
+}
+
 /**
  * Utility to decode and construct the mint authority keypair.
  * Supports both standard base58 strings and JSON arrays.
@@ -211,7 +230,7 @@ export async function POST(request: Request) {
       const markerName = `shift-forge-${sourceNft}`;
       const searchUrl = `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=${encodeURIComponent(markerName)}&pageLimit=1`;
       try {
-        const checkRes = await fetch(searchUrl, {
+        const checkRes = await fetchWithRetry(searchUrl, {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${pinataJwt}`,
@@ -246,7 +265,7 @@ export async function POST(request: Request) {
         const formData = new FormData();
         formData.append('file', blob, `${card.slug || 'card'}.png`);
 
-        const pinataImageRes = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        const pinataImageRes = await fetchWithRetry('https://api.pinata.cloud/pinning/pinFileToIPFS', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${pinataJwt}`,
@@ -316,7 +335,7 @@ export async function POST(request: Request) {
         },
       };
 
-      const pinataMetaRes = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      const pinataMetaRes = await fetchWithRetry('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -367,6 +386,37 @@ export async function POST(request: Request) {
 
       const { nft } = await runWithRpcFallback(async (conn) => {
         const metaplex = Metaplex.make(conn).use(keypairIdentity(mintAuthorityKeypair));
+        
+        // Use custom storage driver to return metadata from memory without external network requests
+        metaplex.use({
+          install(metaplexInstance) {
+            metaplexInstance.storage().setDriver({
+              getUploadPrice: async () => ({ basisPoints: 0, currency: { symbol: 'SOL', decimals: 9 } } as any),
+              upload: async () => 'mock-uri',
+              download: async (uri: string) => {
+                if (uri === metadataUrl) {
+                  const buffer = Buffer.from(JSON.stringify(metaplexMetadata));
+                  return {
+                    buffer,
+                    fileName: 'metadata.json',
+                    mimeType: 'application/json',
+                    displayName: 'Metadata',
+                    uniqueName: 'metadata.json',
+                    extension: 'json',
+                  } as any;
+                }
+                const res = await fetchWithRetry(uri, { method: 'GET' });
+                const arrayBuffer = await res.arrayBuffer();
+                return {
+                  buffer: Buffer.from(arrayBuffer),
+                  fileName: 'file',
+                  mimeType: res.headers.get('content-type') || 'application/octet-stream',
+                } as any;
+              }
+            });
+          }
+        });
+
         return await metaplex.nfts().create({
           uri: metadataUrl,
           name: displayName,
@@ -413,7 +463,7 @@ export async function POST(request: Request) {
           },
         };
 
-        await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+        await fetchWithRetry('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
