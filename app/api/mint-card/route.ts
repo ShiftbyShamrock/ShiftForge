@@ -37,7 +37,26 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
   let lastError: any = null;
   for (const rpcUrl of RPC_ENDPOINTS) {
     try {
-      const conn = new Connection(rpcUrl, 'confirmed');
+      const conn = new Connection(rpcUrl, {
+        commitment: 'confirmed',
+        confirmTransactionInitialTimeout: 120000,
+        fetchMiddleware: (url, options, fetch) => {
+          // Retry individual RPC calls up to 3 times on transient network errors
+          const attemptFetch = async (attempt: number): Promise<any> => {
+            try {
+              return await fetch(url, options);
+            } catch (err: any) {
+              if (attempt < 3) {
+                console.warn(`[RPC fetchMiddleware] Attempt ${attempt} failed for ${rpcUrl}: ${err.message}. Retrying in ${attempt * 500}ms...`);
+                await new Promise(r => setTimeout(r, attempt * 500));
+                return attemptFetch(attempt + 1);
+              }
+              throw err;
+            }
+          };
+          return attemptFetch(1);
+        },
+      });
       return await queryFn(conn);
     } catch (err: any) {
       console.warn(`RPC call failed on ${rpcUrl}: ${err.message || err}. Trying next endpoint...`);
@@ -439,13 +458,19 @@ export async function POST(request: Request) {
       // If fetch succeeds immediately, update mintAddress just in case
       mintAddress = nft.address.toBase58();
     } catch (err: any) {
-      const isAccountNotFoundError = 
+      const isRecoverableError = 
         err.name === 'AccountNotFoundError' || 
         err.message?.includes('was not found') ||
-        err.message?.includes('type [r]');
+        err.message?.includes('type [r]') ||
+        err.message?.includes('fetch failed') ||
+        err.message?.includes('TypeError') ||
+        err.message?.includes('failed to get info about account') ||
+        err.message?.includes('503') ||
+        err.message?.includes('502') ||
+        err.message?.includes('Service unavailable');
 
-      if (isAccountNotFoundError && mintAddress) {
-        console.warn('Solana on-chain mint succeeded but SDK fetch failed (propagation delay). Proceeding with mintAddress:', mintAddress);
+      if (isRecoverableError && mintAddress) {
+        console.warn('Solana on-chain mint likely succeeded but post-mint verification failed (RPC/network error). Proceeding with pre-generated mintAddress:', mintAddress, 'Error:', err.message);
       } else {
         console.error('Solana on-chain NFT minting failed:', err);
         return NextResponse.json(
