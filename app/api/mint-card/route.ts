@@ -27,6 +27,7 @@ import bs58 from 'bs58';
 import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
+const CULTURE_TOKEN_MINT = 'BtpQ3WZsA5rpA45iNWxQJ9djSurnXhrDYMYnyNc1LDrK';
 const RPC_ENDPOINTS = [
   process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
   'https://api.mainnet-beta.solana.com',
@@ -170,6 +171,7 @@ export async function POST(request: Request) {
     const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
     const SHIFT_MINT_FEE = 250;
     const SOL_MINT_FEE = 0.25;
+    const CULTURE_MINT_FEE = 2500000;
 
     // --- Fetch the on-chain transaction using RPC fallback ---
     const tx = await runWithRpcFallback(async (conn) => {
@@ -193,7 +195,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- Verify payment (either SHIFT tokens or native SOL) ---
+    // --- Verify payment (SHIFT tokens, native SOL, or CULTURE SHIFT tokens) ---
     // 1. Verify SHIFT token transfer
     const preBalances = tx.meta?.preTokenBalances ?? [];
     const postBalances = tx.meta?.postTokenBalances ?? [];
@@ -213,7 +215,23 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Verify native SOL transfer
+    // 2. Verify CULTURE SHIFT token transfer
+    let cultureReceived = 0;
+    for (const post of postBalances) {
+      const isTreasuryOwner = post.owner === SHIFT_TREASURY;
+      const isCultureMint = post.mint === CULTURE_TOKEN_MINT;
+
+      if (isTreasuryOwner && isCultureMint) {
+        const postAmount = post.uiTokenAmount?.uiAmount ?? 0;
+        const pre = preBalances.find(
+          (p) => p.accountIndex === post.accountIndex && p.mint === CULTURE_TOKEN_MINT,
+        );
+        const preAmount = pre?.uiTokenAmount?.uiAmount ?? 0;
+        cultureReceived += postAmount - preAmount;
+      }
+    }
+
+    // 3. Verify native SOL transfer
     const accountKeys = tx.transaction.message.getAccountKeys
       ? tx.transaction.message.getAccountKeys({ accountKeysFromLookups: tx.meta?.loadedAddresses })
       : (tx.transaction.message.accountKeys as any);
@@ -237,11 +255,12 @@ export async function POST(request: Request) {
 
     const paidShift = treasuryReceived >= SHIFT_MINT_FEE;
     const paidSol = solReceived >= SOL_MINT_FEE;
+    const paidCulture = cultureReceived >= CULTURE_MINT_FEE;
 
-    if (!paidShift && !paidSol) {
+    if (!paidShift && !paidSol && !paidCulture) {
       return NextResponse.json(
         {
-          error: `Insufficient payment. Expected either ${SHIFT_MINT_FEE} SHIFT (received ${treasuryReceived}) or ${SOL_MINT_FEE} SOL (received ${solReceived.toFixed(4)}).`,
+          error: `Insufficient payment. Expected either ${SHIFT_MINT_FEE} SHIFT (received ${treasuryReceived}), ${SOL_MINT_FEE} SOL (received ${solReceived.toFixed(4)}), or ${CULTURE_MINT_FEE.toLocaleString()} CULTURE SHIFT (received ${cultureReceived.toLocaleString()}).`,
         },
         { status: 402 },
       );

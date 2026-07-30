@@ -795,6 +795,10 @@
             <div class="opt-title">SHIFT TOKEN</div>
             <div class="opt-val">250 SHIFT</div>
           </div>
+          <div class="payment-opt" id="payOptCulture" onclick="selectPaymentMethod('culture')">
+            <div class="opt-title">CULTURE SHIFT</div>
+            <div class="opt-val">2.5M CULTURE</div>
+          </div>
         </div>
       </div>
       <div class="dl-row">
@@ -3017,6 +3021,7 @@
     selectedPayment = method;
     $('payOptSol').classList.toggle('active', method === 'sol');
     $('payOptShift').classList.toggle('active', method === 'shift');
+    $('payOptCulture').classList.toggle('active', method === 'culture');
     updateMintQuoteUI();
   };
 
@@ -3031,6 +3036,17 @@
         msg += ' Your balance: ' + q.walletBalanceSol.toFixed(4) + ' SOL.';
         if(q.walletBalanceSol < solFee){
           msg += ' <span class="err">Not enough SOL to mint.</span>';
+        }
+      } else if(!wallet){
+        msg += ' Connect a wallet to check your balance.';
+      }
+    } else if(selectedPayment === 'culture'){
+      var cultureFee = q.feeCulture || 2500000;
+      msg = 'Mint fee: <span class="fee">' + (cultureFee/1000000).toFixed(1) + 'M CULTURE SHIFT</span>.';
+      if(typeof q.walletBalanceCulture === 'number'){
+        msg += ' Your balance: ' + q.walletBalanceCulture.toLocaleString() + ' CULTURE.';
+        if(q.walletBalanceCulture < cultureFee){
+          msg += ' <span class="err">Not enough CULTURE SHIFT to mint.</span>';
         }
       } else if(!wallet){
         msg += ' Connect a wallet to check your balance.';
@@ -3123,6 +3139,19 @@
             }
             setMint('Building SOL payment of ' + solFee + ' SOL…');
             return paySOL(q).then(function(signature){
+              $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
+              return fetch(api('/api/mint-card'), {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+              }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
+            });
+          } else if(selectedPayment === 'culture'){
+            var cultureFee = q.feeCulture || 2500000;
+            if(q.walletBalanceCulture !== null && q.walletBalanceCulture < cultureFee){
+              throw new Error('Not enough CULTURE SHIFT (need ' + cultureFee.toLocaleString() + ', have ' + (q.walletBalanceCulture || 0).toLocaleString() + ').');
+            }
+            setMint('Building CULTURE SHIFT payment of ' + (cultureFee/1000000).toFixed(1) + 'M CULTURE…');
+            return payCULTURE(q).then(function(signature){
               $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
               return fetch(api('/api/mint-card'), {
                 method:'POST', headers:{'Content-Type':'application/json'},
@@ -3362,6 +3391,122 @@
       }
 
       tryRpc(0).then(res).catch(rej);
+    });
+  }
+
+  // Build + send CULTURE SHIFT COIN transfer using connected wallet.
+  function payCULTURE(quote){
+    return new Promise(function(resolve, reject){
+      var prov = (window.phantom && window.phantom.solana) || window.solana || window.solflare || window.backpack;
+      if(!prov || !prov.signAndSendTransaction){
+        reject(new Error('A Solana wallet that supports signing is required.'));
+        return;
+      }
+      if(!window.solanaWeb3){
+        reject(new Error('Solana Web3 library not loaded. Please refresh the page and try again.'));
+        return;
+      }
+      var Web3 = window.solanaWeb3;
+
+      var TOKEN_PROGRAM_ID = new Web3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+      var ASSOCIATED_TOKEN_PROGRAM_ID = new Web3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+      var SYSTEM_PROGRAM_ID = Web3.SystemProgram.programId;
+
+      var cultureMint = new Web3.PublicKey(quote.cultureMint || 'BtpQ3WZsA5rpA45iNWxQJ9djSurnXhrDYMYnyNc1LDrK');
+      var treasuryPubkey = new Web3.PublicKey(quote.treasury);
+      var walletPubkey = new Web3.PublicKey(wallet.address);
+      var decimals = quote.cultureDecimals || 9;
+      var amount = Math.round((quote.feeCulture || 2500000) * Math.pow(10, decimals));
+
+      function getATA(owner, mint){
+        return Web3.PublicKey.findProgramAddressSync(
+          [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        )[0];
+      }
+
+      function createTransferIx(source, dest, authority, amt){
+        var data = new Uint8Array(9);
+        data[0] = 3;
+        var lo = amt & 0xFFFFFFFF;
+        var hi = Math.floor(amt / 0x100000000) & 0xFFFFFFFF;
+        data[1] = lo & 0xFF; data[2] = (lo >> 8) & 0xFF;
+        data[3] = (lo >> 16) & 0xFF; data[4] = (lo >> 24) & 0xFF;
+        data[5] = hi & 0xFF; data[6] = (hi >> 8) & 0xFF;
+        data[7] = (hi >> 16) & 0xFF; data[8] = (hi >> 24) & 0xFF;
+        return new Web3.TransactionInstruction({
+          keys: [
+            { pubkey: source,    isSigner: false, isWritable: true },
+            { pubkey: dest,      isSigner: false, isWritable: true },
+            { pubkey: authority,  isSigner: true,  isWritable: false }
+          ],
+          programId: TOKEN_PROGRAM_ID,
+          data: data
+        });
+      }
+
+      function createATAIx(payer, ata, owner, mint){
+        return new Web3.TransactionInstruction({
+          keys: [
+            { pubkey: payer,                    isSigner: true,  isWritable: true },
+            { pubkey: ata,                      isSigner: false, isWritable: true },
+            { pubkey: owner,                    isSigner: false, isWritable: false },
+            { pubkey: mint,                     isSigner: false, isWritable: false },
+            { pubkey: SYSTEM_PROGRAM_ID,        isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID,         isSigner: false, isWritable: false }
+          ],
+          programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+          data: new Uint8Array(0)
+        });
+      }
+
+      var fromATA = getATA(walletPubkey, cultureMint);
+      var toATA = getATA(treasuryPubkey, cultureMint);
+      var transferIx = createTransferIx(fromATA, toATA, walletPubkey, amount);
+
+      var endpoints = [
+        quote.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+        'https://api.mainnet-beta.solana.com',
+        'https://solana-mainnet.g.allnodes.com'
+      ];
+
+      function tryRpc(index) {
+        if (index >= endpoints.length) {
+          return Promise.reject(new Error('All client RPC endpoints failed.'));
+        }
+        var conn = new Web3.Connection(endpoints[index], 'confirmed');
+        return conn.getAccountInfo(toATA)
+          .catch(function(err){
+            console.warn('CULTURE getAccountInfo failed on client RPC index ' + index + ':', err);
+            return { data: new Uint8Array(0) };
+          })
+          .then(function(acctInfo){
+            var tx = new Web3.Transaction();
+            if(!acctInfo || !acctInfo.data){
+              tx.add(createATAIx(walletPubkey, toATA, treasuryPubkey, cultureMint));
+            }
+            tx.add(transferIx);
+            return conn.getLatestBlockhash('confirmed').then(function(bh){
+              tx.recentBlockhash = bh.blockhash;
+              tx.feePayer = walletPubkey;
+              return prov.signAndSendTransaction(tx);
+            });
+          })
+          .then(function(result){
+            var sig = result.signature || result;
+            return conn.confirmTransaction(sig, 'confirmed')
+              .then(function(){ return sig; })
+              .catch(function(){ return sig; });
+          })
+          .catch(function(err){
+            console.warn('CULTURE RPC action failed on index ' + index + ':', err);
+            return tryRpc(index + 1);
+          });
+      }
+
+      tryRpc(0).then(resolve).catch(function(err){
+        reject(new Error('CULTURE SHIFT payment failed: ' + (err.message || err)));
+      });
     });
   }
 
