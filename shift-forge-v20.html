@@ -491,6 +491,17 @@
   .payment-opt.active .opt-val {
     color: #ffffff;
   }
+  .fee-note {
+    font-size: 8px;
+    opacity: 0.65;
+    margin-top: 4px;
+    color: var(--text-dim);
+    transition: color 0.25s;
+  }
+  .payment-opt.active .fee-note {
+    color: #ffffff;
+    opacity: 0.8;
+  }
   .opt-title {
     font-size: 10px;
     font-weight: 800;
@@ -790,14 +801,17 @@
           <div class="payment-opt active" id="payOptSol" onclick="selectPaymentMethod('sol')">
             <div class="opt-title">SOLANA</div>
             <div class="opt-val">0.25 SOL</div>
+            <div class="fee-note">(Plus Solana Fee)</div>
           </div>
           <div class="payment-opt" id="payOptShift" onclick="selectPaymentMethod('shift')">
             <div class="opt-title">SHIFT TOKEN</div>
             <div class="opt-val">250 SHIFT</div>
+            <div class="fee-note">(Plus Solana Fee)</div>
           </div>
           <div class="payment-opt" id="payOptCulture" onclick="selectPaymentMethod('culture')">
             <div class="opt-title">CULTURE SHIFT</div>
             <div class="opt-val">2.5M CULTURE</div>
+            <div class="fee-note">(Plus Solana Fee)</div>
           </div>
         </div>
       </div>
@@ -1158,7 +1172,7 @@
   function pickFlavor(seed){ return pickFrom(FLAVOR_POOL, seed); }
 
   // ═══════════ SHIFT SYNERGY & GAME FLOW (from the Synergy Guide) ═══════════
-  var TURN_STRUCTURE = ['Draw Phase','Main Phase I — play SHIFT cards, Items, declare alliances','Battle Phase — Antihero abilities resolve, Heroes attack','Main Phase II — additional actions from card effects','End Step — resolve ongoing effects'];
+  var TURN_STRUCTURE = ['1.Draw Phase', '2. Main Phase I — play SHIFT Spells, Forged NFTs, Items, activate abilities', '3. Battle Phase — abilities resolve, Heroes attack (select Blocks) Damage is done Simultaneously', '4. End Step — (pass turn) resolve ongoing effects.'];
 
   // Hero-archetype synergies. Keyed by archetype tags we can infer from class/affinity.
   var HERO_SYNERGIES = [
@@ -2923,7 +2937,6 @@
         if(!sy) return '';
         var parts = [];
         if(sy.hero && sy.hero.synergies.length){
-          parts.push('<div style="margin-bottom:6px"><b>Hero pairings</b> (this card plays as: ' + (sy.hero.tags.join(', ') || '—') + ')</div>');
           sy.hero.synergies.forEach(function(s){
             parts.push('<div>+ <b>' + esc(s.partner) + '</b> → ' + esc(s.result) + '</div>');
           });
@@ -2968,10 +2981,10 @@
           '<div style="flex:1; min-width:200px;">' +
             '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:8px; font-weight:700;">Turn structure reference</h3>' +
             '<div style="display:flex; flex-direction:column; gap:4px; color:var(--text-dim); font-size:13px; line-height:1.4;">' +
-              '<div>1. Draw Phase</div>' +
-              '<div>2. Main Phase I — play SHIFT Spells, Forged NFTs, Items, declare alliances</div>' +
-              '<div>3. Battle Phase — Antihero abilities resolve, Heroes attack</div>' +
-              '<div>4. End Step — resolve ongoing effects</div>' +
+              '<div>1.Draw Phase</div>' +
+              '<div>2. Main Phase I — play SHIFT Spells, Forged NFTs, Items, activate abilities</div>' +
+              '<div>3. Battle Phase — abilities resolve, Heroes attack (select Blocks) Damage is done Simultaneously</div>' +
+              '<div>4. End Step — (pass turn) resolve ongoing effects.</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -3031,7 +3044,7 @@
     var msg = '';
     if(selectedPayment === 'sol'){
       var solFee = q.feeSol || 0.25;
-      msg = 'Mint fee: <span class="fee">' + solFee + ' SOL</span>.';
+      msg = 'Mint fee: <span class="fee">' + solFee + ' SOL</span> (Plus Solana Fee).';
       if(typeof q.walletBalanceSol === 'number'){
         msg += ' Your balance: ' + q.walletBalanceSol.toFixed(4) + ' SOL.';
         if(q.walletBalanceSol < solFee){
@@ -3042,7 +3055,7 @@
       }
     } else if(selectedPayment === 'culture'){
       var cultureFee = q.feeCulture || 2500000;
-      msg = 'Mint fee: <span class="fee">' + (cultureFee/1000000).toFixed(1) + 'M CULTURE SHIFT</span>.';
+      msg = 'Mint fee: <span class="fee">' + (cultureFee/1000000).toFixed(1) + 'M CULTURE SHIFT</span> (Plus Solana Fee).';
       if(typeof q.walletBalanceCulture === 'number'){
         msg += ' Your balance: ' + q.walletBalanceCulture.toLocaleString() + ' CULTURE.';
         if(q.walletBalanceCulture < cultureFee){
@@ -3053,7 +3066,7 @@
       }
     } else {
       var shiftFee = q.feeShift || 250;
-      msg = 'Mint fee: <span class="fee">' + shiftFee + ' SHIFT</span>.';
+      msg = 'Mint fee: <span class="fee">' + shiftFee + ' SHIFT</span> (Plus Solana Fee).';
       if(typeof q.walletBalance === 'number'){
         msg += ' Your balance: ' + q.walletBalance + ' SHIFT.';
         if(q.walletBalance < shiftFee){
@@ -3079,7 +3092,7 @@
       .then(function(q){
         currentQuote = q;
         if(!q.configured){
-          setMint('Mint preview: <span class="fee">0.25 SOL</span> or <span class="fee">250 SHIFT</span> per card. Goes live when the token & treasury are configured.', '');
+          setMint('Mint preview: <span class="fee">0.25 SOL</span>, <span class="fee">250 SHIFT</span>, or <span class="fee">2.5M CULTURE</span> per card (Plus Solana Fee). Goes live when the token & treasury are configured.', '');
           $('paymentSelectorWrap').style.display = 'none';
           return;
         }
