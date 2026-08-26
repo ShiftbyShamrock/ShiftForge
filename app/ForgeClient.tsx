@@ -94,11 +94,11 @@ export default function ForgeClient({ styleContent, cleanBodyContent, inlineScri
         }}
       />
       <div dangerouslySetInnerHTML={{ __html: cleanBodyContent }} />
-      {/* Inline app script — runs after DOM is ready and Web3 is loaded */}
+      {/* Inline app script — runs after DOM is ready, all resources loaded */}
       <Script
         id="shift-forge-app"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{ __html: inlineScript }}
+        strategy="lazyOnload"
+        dangerouslySetInnerHTML={{ __html: `requestAnimationFrame(function(){${inlineScript}});` }}
       />
     </>
   );
