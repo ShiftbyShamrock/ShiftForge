@@ -3652,71 +3652,33 @@
     </div>
   </div>
 
-<!-- Buffer polyfill for Solana Web3 transactions and serialization in pure browser -->
+<!-- Buffer polyfill: self-hosted standalone UMD bundle (built via browserify, no CDN dependency) -->
+<script src="/buffer-standalone.js"></script>
 <script>
-  (function() {
-    function loadScript(url, onload, onerror) {
-      var script = document.createElement('script');
-      script.src = url;
-      script.onload = onload;
-      script.onerror = onerror;
-      document.body.appendChild(script);
+  // Initialize window.Buffer from the standalone bundle
+  if (typeof window !== 'undefined') {
+    if (typeof buffer !== 'undefined' && buffer.Buffer) {
+      window.Buffer = buffer.Buffer;
+    } else if (typeof Buffer !== 'undefined') {
+      window.Buffer = Buffer;
     }
-
-    function initBuffer() {
-      if (typeof window !== 'undefined') {
-        if (typeof Buffer !== 'undefined') {
-          window.Buffer = Buffer;
-        } else if (typeof buffer !== 'undefined' && buffer.Buffer) {
-          window.Buffer = buffer.Buffer;
-        }
+  }
+  // If self-hosted failed, dynamically load from bundle.run CDN as last resort
+  if (typeof window !== 'undefined' && !window.Buffer) {
+    console.warn('Self-hosted buffer-standalone.js failed, trying bundle.run CDN...');
+    var _bufScript = document.createElement('script');
+    _bufScript.src = 'https://bundle.run/buffer@6.0.3';
+    _bufScript.onload = function() {
+      if (typeof buffer !== 'undefined' && buffer.Buffer) {
+        window.Buffer = buffer.Buffer;
+        console.log('Buffer loaded from bundle.run CDN fallback.');
       }
-    }
-
-    // Start by loading the Buffer polyfill
-    var bufferUrls = [
-      'https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js',
-      'https://cdn.jsdelivr.net/cdnjs/libs/buffer/6.0.3/buffer.min.js'
-    ];
-
-    var solanaWeb3Urls = [
-      'https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js',
-      'https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js'
-    ];
-
-    function tryLoadBuffer(index) {
-      if (index >= bufferUrls.length) {
-        console.error('All Buffer polyfill CDNs failed.');
-        // Still try loading Solana Web3 just in case
-        tryLoadSolana(0);
-        return;
-      }
-      loadScript(bufferUrls[index], function() {
-        initBuffer();
-        console.log('Buffer polyfill loaded successfully.');
-        tryLoadSolana(0);
-      }, function() {
-        console.warn('Buffer polyfill failed to load from: ' + bufferUrls[index] + '. Trying next...');
-        tryLoadBuffer(index + 1);
-      });
-    }
-
-    function tryLoadSolana(index) {
-      if (index >= solanaWeb3Urls.length) {
-        console.error('All Solana Web3 CDNs failed.');
-        return;
-      }
-      loadScript(solanaWeb3Urls[index], function() {
-        console.log('Solana Web3 loaded successfully.');
-      }, function() {
-        console.warn('Solana Web3 failed to load from: ' + solanaWeb3Urls[index] + '. Trying next...');
-        tryLoadSolana(index + 1);
-      });
-    }
-
-    // Trigger sequential load
-    tryLoadBuffer(0);
-  })();
+    };
+    document.head.appendChild(_bufScript);
+  }
 </script>
+
+<!-- Solana Web3 for SHIFT payment transfers (SPL instructions built manually — no spl-token CDN needed) -->
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js" onerror="this.onerror=null; this.src='https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js';"></script>
 </body>
 </html>
