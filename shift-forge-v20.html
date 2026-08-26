@@ -3223,6 +3223,17 @@
     });
   }
 
+  function ensureBuffer(){
+    if(!window.Buffer){
+      if(typeof buffer !== 'undefined' && buffer.Buffer){
+        window.Buffer = buffer.Buffer;
+      } else if(typeof Buffer !== 'undefined'){
+        window.Buffer = Buffer;
+      }
+    }
+    return !!window.Buffer;
+  }
+
   // Build + send the SPL SHIFT transfer using the connected wallet provider.
   // Uses only @solana/web3.js — no spl-token CDN needed (it has no browser bundle).
   function paySHIFT(quote){
@@ -3234,6 +3245,10 @@
       }
       if(!window.solanaWeb3){
         reject(new Error('Solana Web3 library not loaded. Please refresh the page and try again.'));
+        return;
+      }
+      if(!ensureBuffer()){
+        reject(new Error('Buffer library not loaded. Please refresh the page and try again.'));
         return;
       }
       var Web3 = window.solanaWeb3;
@@ -3362,6 +3377,10 @@
         rej(new Error('Solana Web3 library not loaded. Please refresh the page and try again.'));
         return;
       }
+      if(!ensureBuffer()){
+        rej(new Error('Buffer library not loaded. Please refresh the page and try again.'));
+        return;
+      }
       var W3 = window.solanaWeb3;
 
       var c = new W3.Connection(q.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe', 'confirmed');
@@ -3421,6 +3440,10 @@
       }
       if(!window.solanaWeb3){
         reject(new Error('Solana Web3 library not loaded. Please refresh the page and try again.'));
+        return;
+      }
+      if(!ensureBuffer()){
+        reject(new Error('Buffer library not loaded. Please refresh the page and try again.'));
         return;
       }
       var Web3 = window.solanaWeb3;
