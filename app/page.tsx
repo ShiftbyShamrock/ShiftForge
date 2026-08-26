@@ -25,9 +25,15 @@ export default function ForgePage() {
   const styleMatch = forgeHtml.match(/<style>([\s\S]*?)<\/style>/);
   const styleContent = styleMatch ? styleMatch[1] : '';
 
-  // Extract inline <script> content (the main SHIFT Forge app logic)
-  const inlineScriptMatch = bodyContent.match(/<script>([\s\S]*?)<\/script>/);
-  const inlineScript = inlineScriptMatch ? inlineScriptMatch[1] : '';
+  // Extract ALL inline <script> content (the main SHIFT Forge app logic + any polyfill init scripts)
+  const inlineScriptMatches = bodyContent.match(/<script>([\s\S]*?)<\/script>/g) || [];
+  const inlineScript = inlineScriptMatches
+    .map((tag: string) => {
+      const m = tag.match(/<script>([\s\S]*?)<\/script>/);
+      return m ? m[1] : '';
+    })
+    .filter(Boolean)
+    .join('\n;\n');
 
   // Remove ALL <script> tags from the body content to avoid broken dangerouslySetInnerHTML scripts
   const cleanBodyContent = bodyContent

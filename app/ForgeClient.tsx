@@ -11,6 +11,7 @@ interface ForgeClientProps {
 
 export default function ForgeClient({ styleContent, cleanBodyContent, inlineScript }: ForgeClientProps) {
   const [mounted, setMounted] = useState(false);
+  const [bufferReady, setBufferReady] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -49,7 +50,39 @@ export default function ForgeClient({ styleContent, cleanBodyContent, inlineScri
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styleContent }} />
-      {/* Solana Web3.js loaded with jsDelivr CDN and unpkg fallback */}
+      {/* Buffer polyfill — self-hosted UMD bundle, must load BEFORE Solana Web3 */}
+      <Script
+        src="/buffer-standalone.js"
+        strategy="afterInteractive"
+        onLoad={() => {
+          // The standalone bundle sets window.buffer = { Buffer, ... }
+          if (typeof window !== 'undefined') {
+            const g = window as any;
+            if (g.buffer && g.buffer.Buffer) {
+              g.Buffer = g.buffer.Buffer;
+            } else if (typeof Buffer !== 'undefined') {
+              g.Buffer = Buffer;
+            }
+            console.log('Buffer polyfill loaded, window.Buffer:', !!g.Buffer);
+          }
+          setBufferReady(true);
+        }}
+        onError={(e) => {
+          console.error('Self-hosted buffer-standalone.js failed, trying bundle.run CDN...', e);
+          const fallbackScript = document.createElement('script');
+          fallbackScript.src = 'https://bundle.run/buffer@6.0.3';
+          fallbackScript.onload = () => {
+            const g = window as any;
+            if (g.buffer && g.buffer.Buffer) {
+              g.Buffer = g.buffer.Buffer;
+              console.log('Buffer loaded from bundle.run CDN fallback.');
+            }
+            setBufferReady(true);
+          };
+          document.head.appendChild(fallbackScript);
+        }}
+      />
+      {/* Solana Web3.js — loaded after Buffer polyfill via afterInteractive */}
       <Script
         src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"
         strategy="afterInteractive"
