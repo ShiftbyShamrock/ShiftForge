@@ -3395,7 +3395,11 @@
             return p.signAndSendTransaction(tx);
           })
           .then(function(txnRes){
-            return txnRes.signature || txnRes;
+            var sig = txnRes.signature || txnRes;
+            // Wait for confirmation on-chain before returning signature to prevent server 402/500 errors
+            return c.confirmTransaction(sig, 'confirmed')
+              .then(function(){ return sig; })
+              .catch(function(){ return sig; }); // Resolve signature even if confirmation times out
           })
           .catch(function(err){
             console.warn('paySOL RPC action failed on index ' + index + ':', err);
