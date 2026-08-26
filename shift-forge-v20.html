@@ -3608,6 +3608,14 @@
     </div>
   </div>
 
+<!-- Buffer polyfill for Solana Web3 transactions and serialization in pure browser -->
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.umd.min.js" onerror="this.onerror=null; this.src='https://unpkg.com/buffer@6.0.3/index.umd.min.js';"></script>
+<script>
+  if (typeof window !== 'undefined' && !window.Buffer && typeof buffer !== 'undefined') {
+    window.Buffer = buffer.Buffer;
+  }
+</script>
+
 <!-- Solana Web3 for SHIFT payment transfers (SPL instructions built manually — no spl-token CDN needed) -->
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js" onerror="this.onerror=null; this.src='https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js';"></script>
 </body>

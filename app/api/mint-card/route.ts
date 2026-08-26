@@ -25,6 +25,7 @@ import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
 import { NextResponse } from 'next/server';
 import bs58 from 'bs58';
 import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
+import { Buffer } from 'buffer';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const CULTURE_TOKEN_MINT = 'BtpQ3WZsA5rpA45iNWxQJ9djSurnXhrDYMYnyNc1LDrK';
