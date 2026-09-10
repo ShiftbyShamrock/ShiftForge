@@ -743,6 +743,133 @@
     0% { box-shadow: 0 0 15px rgba(243,210,122,0.3); }
     100% { box-shadow: 0 0 30px rgba(243,210,122,0.65), 0 0 12px rgba(255,255,255,0.5); }
   }
+
+  /* ═══════════ NEW ANIMATED FORGE BOX COLORS & STYLES ═══════════ */
+  @keyframes boxReveal {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* FORGE OUTPUT 1 — Amethyst-Gold Celestial Shimmer */
+  .dblock-output1 {
+    background: linear-gradient(135deg, rgba(26,22,38,0.95), rgba(46,30,78,0.85)) !important;
+    border: 1.5px solid rgba(243,210,122,0.45) !important;
+    box-shadow: 0 6px 28px rgba(139,127,240,0.18), inset 0 0 16px rgba(243,210,122,0.06);
+    position: relative;
+    overflow: hidden;
+    animation: boxReveal 0.6s ease-out, output1BorderPulse 4s ease-in-out infinite alternate;
+  }
+  .dblock-output1 h3 {
+    color: #ffd27a !important;
+    background: linear-gradient(90deg, #ffd27a, #ffffff, #c9912a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 11.5px !important;
+  }
+  @keyframes output1BorderPulse {
+    0% { border-color: rgba(243,210,122,0.35); box-shadow: 0 4px 20px rgba(139,127,240,0.15); }
+    100% { border-color: rgba(255,225,140,0.85); box-shadow: 0 8px 36px rgba(243,210,122,0.35), 0 0 18px rgba(139,127,240,0.25); }
+  }
+
+  /* STAT FORMULAS — Electric Cyan/Emerald Energy Pulse */
+  .dblock-stats {
+    background: linear-gradient(135deg, rgba(22,26,38,0.95), rgba(16,42,42,0.8)) !important;
+    border: 1.5px solid rgba(93,202,165,0.45) !important;
+    box-shadow: 0 6px 28px rgba(93,202,165,0.16), inset 0 0 16px rgba(93,202,165,0.05);
+    animation: boxReveal 0.65s ease-out, statsBorderPulse 3.6s ease-in-out infinite alternate;
+  }
+  .dblock-stats h3 {
+    color: #5DCAA5 !important;
+    background: linear-gradient(90deg, #5DCAA5, #9FE1CB, #85B7EB);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 11.5px !important;
+  }
+  @keyframes statsBorderPulse {
+    0% { border-color: rgba(93,202,165,0.35); box-shadow: 0 4px 20px rgba(93,202,165,0.12); }
+    100% { border-color: rgba(133,230,195,0.85); box-shadow: 0 8px 36px rgba(93,202,165,0.32), 0 0 20px rgba(133,230,195,0.25); }
+  }
+
+  /* ABILITIES BOX — Molten Flame Ember Radiance */
+  .dblock-abilities {
+    background: linear-gradient(135deg, rgba(28,20,32,0.95), rgba(52,24,18,0.75)) !important;
+    border: 1.5px solid rgba(240,153,123,0.45) !important;
+    box-shadow: 0 6px 28px rgba(240,153,123,0.16), inset 0 0 16px rgba(240,153,123,0.05);
+    animation: boxReveal 0.7s ease-out, abilitiesBorderPulse 3.8s ease-in-out infinite alternate;
+  }
+  .dblock-abilities h3 {
+    color: #F0997B !important;
+    background: linear-gradient(90deg, #F0997B, #FAC775, #ffd27a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 11.5px !important;
+  }
+  @keyframes abilitiesBorderPulse {
+    0% { border-color: rgba(240,153,123,0.35); box-shadow: 0 4px 20px rgba(240,153,123,0.12); }
+    100% { border-color: rgba(255,185,145,0.85); box-shadow: 0 8px 36px rgba(240,153,123,0.32), 0 0 20px rgba(255,200,100,0.25); }
+  }
+
+  /* NFT OWNERSHIP RECORD BUTTON */
+  .dblock-ownership {
+    background: rgba(26,22,38,0.9) !important;
+    border: 1px solid rgba(139,127,240,0.25) !important;
+    transition: all 0.3s ease;
+  }
+  .dblock-ownership:hover {
+    border-color: rgba(139,127,240,0.5) !important;
+    box-shadow: 0 4px 20px rgba(139,127,240,0.15);
+  }
+  .own-status-btn {
+    transition: all 0.25s cubic-bezier(0.2,0.8,0.2,1);
+    letter-spacing: 0.04em;
+  }
+  .own-status-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    filter: brightness(1.2);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  /* SHIFT SYNERGY & WEB3 ALLIANCES — Celestial Alliance Aura */
+  .dblock-synergy {
+    background: linear-gradient(135deg, rgba(26,22,38,0.95), rgba(44,26,72,0.8)) !important;
+    border: 1.5px solid rgba(139,127,240,0.5) !important;
+    box-shadow: 0 6px 30px rgba(139,127,240,0.2), inset 0 0 18px rgba(243,210,122,0.06);
+    animation: boxReveal 0.75s ease-out, synergyBorderPulse 4.2s ease-in-out infinite alternate;
+  }
+  .dblock-synergy h3 {
+    color: #ffd27a !important;
+    background: linear-gradient(90deg, #ffd27a, #CECBF6, #8b7ff0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 12px !important;
+  }
+  @keyframes synergyBorderPulse {
+    0% { border-color: rgba(139,127,240,0.38); box-shadow: 0 4px 20px rgba(139,127,240,0.15); }
+    100% { border-color: rgba(205,188,255,0.85); box-shadow: 0 8px 36px rgba(139,127,240,0.35), 0 0 20px rgba(243,210,122,0.25); }
+  }
+
+  /* HOW TO WIN — Triumphant Golden Victory Pulse */
+  .dblock-htw {
+    background: linear-gradient(135deg, rgba(26,22,38,0.95), rgba(52,38,18,0.75)) !important;
+    border: 1.5px solid rgba(255,210,122,0.5) !important;
+    box-shadow: 0 6px 30px rgba(255,210,122,0.18), inset 0 0 20px rgba(255,210,122,0.06);
+    animation: boxReveal 0.8s ease-out, htwBorderPulse 4s ease-in-out infinite alternate;
+  }
+  .dblock-htw h3 {
+    color: #ffd27a !important;
+    background: linear-gradient(90deg, #ffd27a, #ffffff, #EF9F27);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 12px !important;
+  }
+  @keyframes htwBorderPulse {
+    0% { border-color: rgba(255,210,122,0.38); box-shadow: 0 4px 20px rgba(255,210,122,0.14); }
+    100% { border-color: rgba(255,238,168,0.88); box-shadow: 0 8px 38px rgba(255,210,122,0.35), 0 0 22px rgba(239,159,39,0.3); }
+  }
 </style>
 </head>
 <body>
@@ -751,7 +878,7 @@
   <header>
     <h1>S H I F T &nbsp;·&nbsp; T H E &nbsp; F O R G E</h1>
     <p class="subtitle">NFT → Playable Card · Enhanced Artwork · Lore Entry</p>
-    <p class="objective-line">🎯 <b>Objective:</b> Level up your Forged Playables with PVE, PVP, CO-OP Boss Battles. Reach <b>Level 5 (max level)</b> before your opponents — or Ally with other players to defeat AI Opponents for Loot and airdrops</p>
+    <p class="objective-line">🎯 <b>Objective:</b> Level up your Forged Playables with PVE, PVP, or CO-OP BOSS Battles to Unlock New Abilities. Reach <b>Level 5 (max level)</b> for the Ultimate Effect.</p>
   </header>
 
 
@@ -770,23 +897,6 @@
       <div class="frame-demo" style="border-color:#9b8cff;color:#c4baff">Epic · Purple</div>
       <div class="frame-demo" style="border-image:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#b66dff) 1;color:#fff">Legendary · Rainbow Foil</div>
       <div class="frame-demo" style="border-color:#ff6b9d;color:#ffb3d0">Mythic · Animated Cosmic ✦</div>
-    </div>
-  <div class="panel synergy-info-panel">
-    <h2 style="font-family: 'Cinzel', serif; font-size: 16px; color: var(--gold); letter-spacing: 0.08em; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700;">
-      🌐 SHIFT Synergy &amp; Web3 Alliances
-    </h2>
-    <div style="font-size: 14.5px; line-height: 1.8; color: var(--text); padding: 4px 6px; position: relative; z-index: 1;">
-      <p style="margin-bottom: 12px;">
-        SHIFT integrates and recognizes top <b>Web3 NFT Collections</b> (such as <i>BASC, Mad Lads, DeGods, Claynosaurz</i>, and more). Forging an NFT from a recognized collection locks in unique high-impact <b>Class and Affinity Archetypes</b> and grants powerful in-game advantages:
-      </p>
-      <ul style="margin-left: 20px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; list-style-type: square; color: var(--text-dim);">
-        <li><b>Tactical Ally Synergy Bond:</b> When multiple players field heroes from the same collection, their cards gain an immediate <b>+2 Power</b> boost and pool their passive traits.</li>
-        <li><b>Dominate Bosses &amp; Raids:</b> Pooling collection-based skills is the key to conquering PVE Boss Battles and CO-OP Raids.</li>
-        <li><b>Systematic Token Play:</b> earn Tokens &amp; XP for playing, Unlock new cards in PVE or for the Most rewards Defeat a BOSS with an ALLY in CO-OP.</li>
-      </ul>
-      <p style="font-size: 13.5px; color: var(--gold); font-style: italic; margin-top: 10px;">
-        ✦ Connect your Solana wallet, select your NFT, and the Forge will automatically detect its collection and activate the corresponding Ally Synergy profile!
-      </p>
     </div>
   </div>
 
@@ -819,9 +929,8 @@
     </div>
   </div>
 
-  <div class="staked-note" id="stakedNote">
-    <div style="margin-bottom:6px">💡 <b>Not seeing all your NFTs?</b> Staked or escrowed NFTs are held by staking programs some may not appear here. Unstake them first. Only on-chain NFT images can be forged.</div>
-    <span class="note-warn">⚠️ Please Note — if you skip Step 1 your Forged NFT may get stamped UNVERIFIED due to on-chain ownership verification incomplete.</span>
+  <div class="staked-note" id="stakedNote" style="text-align:center; padding: 12px 18px; margin: 14px 0;">
+    <b>⚠️ Please Note:</b> Only On-Chain NFT Images can be Forged.
   </div>
 
   <div class="panel">
@@ -973,6 +1082,87 @@
   document.addEventListener('click', function unlockAudio(){
     getAudioContext();
   }, { once: true });
+
+  // Sound during active forging: rhythmic pulsating on-chain energy resonance + cyber rune blips
+  var forgeProgressAudio = null;
+  function startForgingProgressSound(){
+    try {
+      var ctx = getAudioContext();
+      if(!ctx) return;
+      stopForgingProgressSound();
+
+      var masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.3);
+      masterGain.connect(ctx.destination);
+
+      var droneOsc = ctx.createOscillator();
+      droneOsc.type = 'sawtooth';
+      droneOsc.frequency.setValueAtTime(110, ctx.currentTime);
+      
+      var filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(360, ctx.currentTime);
+
+      var lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(3.8, ctx.currentTime);
+      var lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(180, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+
+      droneOsc.connect(filter);
+      filter.connect(masterGain);
+      droneOsc.start();
+      lfo.start();
+
+      var blipInterval = setInterval(function(){
+        try {
+          if(!forgeProgressAudio) return;
+          var t = ctx.currentTime;
+          var bOsc = ctx.createOscillator();
+          var bGain = ctx.createGain();
+          bOsc.type = 'sine';
+          var f = [523.25, 659.25, 783.99, 1046.50][Math.floor(Math.random()*4)];
+          bOsc.frequency.setValueAtTime(f, t);
+          bOsc.frequency.exponentialRampToValueAtTime(f * 1.45, t + 0.08);
+          bGain.gain.setValueAtTime(0.08, t);
+          bGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+          bOsc.connect(bGain);
+          bGain.connect(masterGain);
+          bOsc.start(t);
+          bOsc.stop(t + 0.095);
+        } catch(e){}
+      }, 240);
+
+      forgeProgressAudio = {
+        ctx: ctx,
+        masterGain: masterGain,
+        droneOsc: droneOsc,
+        lfo: lfo,
+        interval: blipInterval
+      };
+    } catch(e){
+      console.warn('startForgingProgressSound error:', e);
+    }
+  }
+
+  function stopForgingProgressSound(){
+    try {
+      if(!forgeProgressAudio) return;
+      var cur = forgeProgressAudio;
+      forgeProgressAudio = null;
+      clearInterval(cur.interval);
+      var t = cur.ctx.currentTime;
+      cur.masterGain.gain.linearRampToValueAtTime(0.0001, t + 0.12);
+      setTimeout(function(){
+        try {
+          cur.droneOsc.stop();
+          cur.lfo.stop();
+        } catch(e){}
+      }, 150);
+    } catch(e){}
+  }
 
   // Sound when card is FORGED: Anvil strike + fiery resonance + rising magical shimmer
   function playForgeSound(){
@@ -2241,6 +2431,7 @@
     $('output').classList.remove('show');
     genImgEl = null; usedGeneratedArt = false;
     stopMythicAnim();
+    startForgingProgressSound();
 
     var tokenName = $('tokenName').value.trim();
     var collection = $('collection').value.trim();
@@ -2423,6 +2614,7 @@
         return new Promise(function(r){ setTimeout(r, 60); });
       })
       .then(function(){
+        stopForgingProgressSound();
         refreshAll();
         $('output').classList.add('show');
         playForgeSound();
@@ -2434,6 +2626,7 @@
         $('cardCanvas').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       })
       .catch(function(err){
+        stopForgingProgressSound();
         console.error('Forge fatal error:', err);
         setStatus('Forge failed: ' + (err && err.message ? err.message : 'unknown') + ' — try again.', 'error');
         btn.textContent = '⚒ Forge SHIFT Card';
@@ -3187,6 +3380,12 @@
     return div.innerHTML;
   }
 
+  window.toggleOwnershipPopup = function(){
+    var p = document.getElementById('ownPopupContent');
+    if(!p) return;
+    p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none';
+  };
+
   function renderDetails(d){
     var a = AFFINITIES[d.affinity] || AFFINITIES.Shadow;
     var rc = RARITY_COLORS[d.rarity];
@@ -3202,16 +3401,8 @@
       ? d.healthBonuses.map(function(b){ return '<span class="btag" style="color:#85B7EB;border-color:#185FA5;background:rgba(24,95,165,0.25)">+1 '+esc(b)+'</span>'; }).join('')
       : '<span style="font-size:11px;color:var(--text-dim)">no trait bonuses</span>';
 
-    var scanHtml = '';
-    if(d.forgeScan){
-      var hits = [];
-      d.forgeScan.affHits.forEach(function(h){ hits.push('<div><b>' + esc(h.label) + '</b> detected → adds <b>' + esc(h.aff) + ' Affinity</b></div>'); });
-      d.forgeScan.traitHits.forEach(function(h){ hits.push('<div><b>' + esc(h.label) + '</b> detected → adds <b>' + esc(h.trait) + '</b>: ' + esc(h.desc) + '</div>'); });
-      scanHtml = '<div class="dblock"><h3>Forge AI scan results</h3><div class="forge-hit">' + (hits.length ? hits.join('') : 'No keyword matches — affinity assigned by visual analysis.') + '</div></div>';
-    }
-
     var collHtml = d.recognizedCollection
-      ? '<div class="dblock"><h3>Collection recognized — ' + esc(d.recognizedCollection.name) + '</h3><div class="forge-hit">' +
+      ? '<div class="dblock dblock-synergy"><h3>Collection recognized — ' + esc(d.recognizedCollection.name) + '</h3><div class="forge-hit">' +
         '<div>Class locked: <b>' + esc(d.recognizedCollection.lockClass) + '</b> · Affinity locked: <b>' + esc(d.recognizedCollection.lockAff) + '</b></div>' +
         (d.collectionBonus ? '<div>Synergy: <b>' + esc(d.collectionBonus.name) + '</b> — ' + esc(d.collectionBonus.desc) + '</div>' : '') +
         '</div></div>'
@@ -3219,16 +3410,29 @@
 
     var own = d.ownership || {};
     var ownJson = JSON.stringify({ wallet: own.wallet || 'not connected', nft: own.nft || '', cardId: own.cardId || '' }, null, 2);
+    var statusLabel = own.verified ? '✓ VERIFIED ON-CHAIN (' + esc(own.chain || 'solana') + ')' : '⚠ UNVERIFIED';
+    var statusColor = own.verified ? '#2fbd8d' : '#f08080';
+    var statusBg = own.verified ? 'rgba(47,189,141,0.12)' : 'rgba(240,128,128,0.12)';
+    var statusBorder = own.verified ? 'rgba(47,189,141,0.35)' : 'rgba(240,128,128,0.35)';
+
     var ownHtml =
-      '<div class="dblock"><h3>NFT ownership record</h3>' +
-      '<div class="forge-hit" style="margin-bottom:8px">Status: ' + (own.verified
-        ? '<b style="color:#2fbd8d">✓ VERIFIED ON-CHAIN (' + esc(own.chain) + ')</b>'
-        : '<b style="color:#f08080">⚠ UNVERIFIED</b>') +
-        (own.note ? '<br>' + esc(own.note) : '') + '</div>' +
-      '<div class="code-block">' + esc(ownJson) + '</div></div>';
+      '<div class="dblock dblock-ownership" style="padding:14px 16px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">' +
+          '<div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim);">NFT Ownership Record</div>' +
+          '<button type="button" id="ownRecordBtn" onclick="toggleOwnershipPopup()" class="own-status-btn" style="background:'+statusBg+'; border:1px solid '+statusBorder+'; color:'+statusColor+'; padding:7px 14px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">' +
+            '<span>🛡️</span> ' + statusLabel + ' <span style="font-size:10px; opacity:0.8; margin-left:4px;">▼ View Record</span>' +
+          '</button>' +
+        '</div>' +
+        '<div id="ownPopupContent" style="display:none; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08); animation:fadeIn 0.25s ease;">' +
+          '<div class="forge-hit" style="margin-bottom:8px; font-size:13px;">' +
+            '<b>Status:</b> ' + statusLabel + (own.note ? '<br>' + esc(own.note) : '') +
+          '</div>' +
+          '<div class="code-block" style="font-size:12px; line-height:1.5;">' + esc(ownJson) + '</div>' +
+        '</div>' +
+      '</div>';
 
     $('details').innerHTML =
-      '<div class="dblock"><h3>Forge output 1 — playable card</h3><div class="id-row">' +
+      '<div class="dblock dblock-output1"><h3>Forge output 1 — playable card</h3><div class="id-row">' +
         '<span class="id-it">Name <b>'+esc(d.displayName)+'</b></span>' +
         '<span class="id-it">Template <b>'+ct.icon+' '+esc(d.cardType)+'</b></span>' +
         '<span class="id-it">Class <b>'+esc(d.displayClass)+'</b></span>' +
@@ -3238,29 +3442,21 @@
         (d.ascended ? '<span class="id-it">Form <b style="color:var(--gold)">★ '+esc(d.ascendedForm)+'</b></span>' : '') +
       '</div></div>' +
 
-      '<div class="dblock"><h3>Stat formulas</h3><div class="sf-grid">' +
+      '<div class="dblock dblock-stats"><h3>Stat formulas</h3><div class="sf-grid">' +
         '<div class="sf-box"><div class="sf-val" style="color:'+a.light+'">'+d.power+'</div><div class="sf-lbl">Power / ' + (d.oneOfOne ? 21 : 10) + '</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.powerBase+'<br>'+pb+'</div></div>' +
         '<div class="sf-box"><div class="sf-val" style="color:#ff8d8d">'+d.health+'</div><div class="sf-lbl">Health / ' + (d.oneOfOne ? 25 : 12) + '</div><div class="sf-bd">Base ('+esc(d.rarity)+'): '+d.healthBase+'<br>'+hb+'</div></div>' +
         '<div class="sf-box"><div class="sf-val" style="color:#ffd27a">'+d.xpValue+'</div><div class="sf-lbl">XP Value</div><div class="sf-bd">Level '+d.level+' defeat reward</div></div>' +
       '</div></div>' +
 
-      scanHtml + collHtml +
+      collHtml +
 
-      '<div class="dblock"><h3>Abilities — drawn from the '+esc(d.affinity)+' pool</h3>' +
+      '<div class="dblock dblock-abilities"><h3>Abilities — drawn from the '+esc(d.affinity)+' pool</h3>' +
         '<div class="ab-it" style="border-left-color:'+a.light+'"><div class="ab-tp">Passive'+(d.passiveUpgraded?' <span style="color:var(--gold)">★ upgraded (Lv 3)</span>':'')+'</div><div class="ab-nm">'+esc(d.passive.name)+'</div><div class="ab-ds">'+esc(d.passive.description)+(d.passiveUpgraded?' <b style="color:var(--gold)">Effect doubled.</b>':'')+'</div></div>' +
         '<div class="ab-it" style="border-left-color:'+a.light+'"><div class="ab-tp">Active</div><div class="ab-nm">'+esc(d.active.name)+'</div><div class="ab-ds">'+esc(d.active.description)+'</div></div>' +
         '<div class="ab-it'+(d.ultimateUnlocked?'':' locked')+'" style="border-left-color:#ffb338"><div class="ab-tp" style="color:#ffb338">Ultimate'+(d.ultimateUnlocked?'':' 🔒 unlocks at Lv 5')+'</div><div class="ab-nm">'+esc(d.ultimate.name)+'</div><div class="ab-ds">'+esc(d.ultimate.description)+'</div></div>' +
       '</div>' +
 
       ownHtml +
-
-      '<div class="dblock"><h3>Forge output 2 — artwork</h3><div class="forge-hit">' +
-        '<div>Original NFT: <b>preserved</b></div>' +
-        '<div>Card art: <b>' + (usedGeneratedArt ? 'enhanced SHIFT fantasy upgrade ✦' : 'original with affinity styling') + '</b></div>' +
-        '<div>Rarity treatment: <b>' + ({Common:'Bronze patina',Uncommon:'Silver tone',Rare:'Golden glow',Epic:'Arcane purple radiance',Legendary:'Rainbow foil sheen',Mythic:'Animated cosmic aurora ✦'})[d.rarity] + '</b></div>' +
-      '</div></div>' +
-
-      '<div class="dblock"><h3>Forge output 3 — lore entry</h3><div class="lore-block">"'+esc(d.lore)+'"</div></div>' +
 
       (d.artPromptUsed ? '<div class="dblock"><h3>Art prompt used</h3><div style="font-size:12px;color:var(--text-dim);line-height:1.6">'+esc(d.artPromptUsed)+'</div></div>' : '') +
       (function(){
@@ -3273,37 +3469,41 @@
       })() +
       (function(){
         var sy = d.synergy;
-        if(!sy) return '';
         var parts = [];
-        if(sy.hero && sy.hero.synergies.length){
+        if(d.recognizedCollection){
+          parts.push('<div style="margin-bottom:8px; color:var(--gold); font-size:14.5px;">🤝 <b>' + esc(d.recognizedCollection.name) + ' ALLY SYNERGY ACTIVATED:</b> ' + (d.collectionBonus ? esc(d.collectionBonus.desc) : ('Class locked to ' + esc(d.recognizedCollection.lockClass))) + '</div>');
+        }
+        if(sy && sy.hero && sy.hero.synergies.length){
           sy.hero.synergies.forEach(function(s){
             parts.push('<div>+ <b>' + esc(s.partner) + '</b> → ' + esc(s.result) + '</div>');
           });
         }
-        if(sy.spellCombo && sy.spellCombo.partner){
+        if(sy && sy.spellCombo && sy.spellCombo.partner){
           parts.push('<div style="margin-top:6px">🔗 Spell combo: <b>' + esc(sy.spellCombo.spell) + '</b> + <b>' + esc(sy.spellCombo.partner) + '</b></div>');
         }
-        if(sy.artifactNote){
+        if(sy && sy.artifactNote){
           parts.push('<div style="margin-top:6px">⚙ This artifact ' + esc(sy.artifactNote) + '.</div>');
         }
-        if(sy.collectionAlly){
+        if(sy && sy.collectionAlly){
           parts.push('<div style="margin-top:8px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:8px; color:#f3d27a;">🤝 <b>' + esc(sy.collectionAlly.abilityName) + ':</b> ' + esc(sy.collectionAlly.result) + '</div>');
         }
-        if(!parts.length) return '';
-        return '<div class="dblock synergy-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
+        parts.push(
+          '<div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); font-size:13.5px; line-height:1.7; color:var(--text-dim);">' +
+            '<div>⚔️ <b>Tactical Ally Synergy Bond:</b> When multiple players field heroes from the same collection, their cards gain an immediate <b>+2 Power</b> boost and pool their passive traits.</div>' +
+            '<div style="margin-top:5px;">🛡️ <b>Dominate Bosses & Raids:</b> Pooling collection-based skills is the key to conquering PVE Boss Battles and CO-OP Raids.</div>' +
+            '<div style="margin-top:5px;">🪙 <b>Systematic Token Play:</b> earn Tokens & XP for playing, Unlock new cards in PVE or for the Most rewards Defeat a BOSS with an ALLY in CO-OP.</div>' +
+          '</div>'
+        );
+        return '<div class="dblock dblock-synergy synergy-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
                  '<h3 style="font-size:12px; font-family:\'Cinzel\', serif; letter-spacing:0.15em; color:var(--gold); margin-bottom:12px; font-weight:700;">SHIFT SYNERGY & WEB3 ALLIANCES</h3>' +
-                 '<div style="font-size:13.5px; color:var(--text-dim); margin-bottom:12px; line-height:1.6;">' +
-                   '🌐 <b>Web3 Collections Synergy:</b> Integrating Solana collections unlocks custom passive abilities, team bonuses, and high-impact tactical advantages. Systematic Token Play: earn Tokens & XP for playing, Unlock new cards in PVE or for the Most rewards Defeat a BOSS with an ALLY in CO-OP.' +
-                 '</div>' +
-                 '<div style="height:1px; background:rgba(255,255,255,0.08); margin:12px 0;"></div>' +
                  '<div class="forge-hit" style="font-family: inherit; font-size: 14.5px;">' + 
                    parts.join('') + 
                  '</div>' +
                '</div>';
       })() +
-      '<div class="dblock htw-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
+      '<div class="dblock dblock-htw htw-panel" style="font-size:15px; line-height:1.75; padding:18px 20px;">' +
         '<h3 style="font-size:12px; letter-spacing:0.15em; color:var(--gold); margin-bottom:10px; font-weight:700;">HOW TO WIN</h3>' +
-        '<div style="margin-bottom:8px;">🎯 <b>Objective:</b> Level up your Forged Playables with PVE, PVP, CO-OP Boss Battles.</div>' +
+        '<div style="margin-bottom:8px;">🎯 <b>Objective:</b> Level up your Forged Playables with PVE, PVP, or CO-OP BOSS Battles to Unlock New Abilities. Reach <b>Level 5 (max level)</b> for the Ultimate Effect.</div>' +
         '<div style="margin-bottom:8px;">🏆 <b>Victory:</b> Reach Level 5 (max XP) before your opponents — or Ally with other players to defeat AI Opponents for Loot.</div>' +
         '<div style="margin-bottom:16px;">📈 This card is <b>Level ' + d.level + '</b> with an XP Value of <b>' + d.xpValue + '</b>' + 
           (d.evoLevel >= 5 
