@@ -95,7 +95,7 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3, de
  * Utility to decode and construct the mint authority keypair.
  * Supports both standard base58 strings and JSON arrays.
  */
-function getMintAuthorityKeypair(): Keypair {
+export function getMintAuthorityKeypair(): Keypair {
   const secret = process.env.MINT_AUTHORITY_SECRET;
   if (!secret) {
     console.warn('MINT_AUTHORITY_SECRET environment variable is not configured. Using generated keypair fallback.');
@@ -122,6 +122,160 @@ function getMintAuthorityKeypair(): Keypair {
   } catch (e: any) {
     console.warn(`Failed to decode MINT_AUTHORITY_SECRET from Base58 (${e.message}). Using generated keypair fallback.`);
     return Keypair.generate();
+  }
+}
+
+// In-memory cache for the official collection mint address
+let cachedCollectionMint: string | null = null;
+
+/**
+ * Retrieves the official "SHIFT Card Game" Collection NFT mint address,
+ * or creates it on-chain with Metaplex if it does not exist yet.
+ * The mint address is pinned to Pinata so it persists across serverless executions.
+ */
+export async function getOrCreateCollectionMint(
+  conn: Connection,
+  mintAuthorityKeypair: Keypair,
+  pinataJwt: string
+): Promise<string | null> {
+  // 1. Environment variable override
+  if (process.env.COLLECTION_MINT) {
+    return process.env.COLLECTION_MINT;
+  }
+  // 2. In-memory cache
+  if (cachedCollectionMint) {
+    return cachedCollectionMint;
+  }
+  // 3. Query Pinata for pinned collection marker
+  try {
+    const searchUrl = `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=shift-collection-mint&pageLimit=1`;
+    const checkRes = await fetchWithRetry(searchUrl, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${pinataJwt}` },
+    });
+    if (checkRes.ok) {
+      const checkData = await checkRes.json();
+      if ((checkData.rows?.length ?? 0) > 0) {
+        const ipfsHash = checkData.rows[0].ipfs_pin_hash;
+        const markerRes = await fetchWithRetry(`https://gateway.pinata.cloud/ipfs/${ipfsHash}`, {
+          method: 'GET',
+        });
+        if (markerRes.ok) {
+          const markerData = await markerRes.json();
+          if (markerData.collectionMint) {
+            console.log('Found existing SHIFT collection mint in Pinata:', markerData.collectionMint);
+            cachedCollectionMint = markerData.collectionMint;
+            return markerData.collectionMint;
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('Could not query Pinata for existing collection mint:', err.message || err);
+  }
+
+  // 4. Create the on-chain SHIFT Card Game Collection NFT if not found
+  try {
+    console.log('Creating official SHIFT Card Game Collection NFT on Solana...');
+    const metaplex = Metaplex.make(conn).use(keypairIdentity(mintAuthorityKeypair));
+
+    const collectionMetadata = {
+      name: 'SHIFT Card Game',
+      symbol: 'SHIFT',
+      description: 'The official on-chain playable NFT collection for the SHIFT Fantasy Card Game.',
+      image: 'https://gateway.pinata.cloud/ipfs/QmVRNu9YQGSPEoEGnJykXBgKaz2fax4bRvE6XVvSn6zNNn',
+      external_url: 'https://www.shiftforge.io',
+      seller_fee_basis_points: 500,
+      properties: {
+        category: 'image',
+        files: [
+          {
+            uri: 'https://gateway.pinata.cloud/ipfs/QmVRNu9YQGSPEoEGnJykXBgKaz2fax4bRvE6XVvSn6zNNn',
+            type: 'image/png',
+          },
+        ],
+        creators: [
+          {
+            address: mintAuthorityKeypair.publicKey.toBase58(),
+            share: 100,
+          },
+        ],
+      },
+    };
+
+    const pinMetaRes = await fetchWithRetry('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${pinataJwt}`,
+      },
+      body: JSON.stringify({
+        pinataContent: collectionMetadata,
+        pinataMetadata: { name: 'SHIFT Card Game Collection Metadata' },
+      }),
+    });
+
+    if (!pinMetaRes.ok) {
+      throw new Error(`Failed to pin collection metadata to Pinata: ${pinMetaRes.statusText}`);
+    }
+
+    const pinMetaData = await pinMetaRes.json();
+    const collectionMetadataUri = `https://gateway.pinata.cloud/ipfs/${pinMetaData.IpfsHash}`;
+
+    // Custom storage driver to avoid network calls during metaplex operation
+    metaplex.use({
+      install(metaplexInstance) {
+        metaplexInstance.storage().setDriver({
+          getUploadPrice: async () => ({ basisPoints: 0, currency: { symbol: 'SOL', decimals: 9 } } as any),
+          upload: async () => 'mock-uri',
+          download: async (uri: string) => {
+            const buffer = Buffer.from(JSON.stringify(collectionMetadata));
+            return {
+              buffer,
+              fileName: 'metadata.json',
+              mimeType: 'application/json',
+              displayName: 'Metadata',
+              uniqueName: 'metadata.json',
+              extension: 'json',
+            } as any;
+          },
+        });
+      },
+    });
+
+    const { nft: collectionNft } = await metaplex.nfts().create({
+      uri: collectionMetadataUri,
+      name: 'SHIFT Card Game',
+      symbol: 'SHIFT',
+      sellerFeeBasisPoints: 500,
+      isCollection: true,
+      isMutable: true,
+    });
+
+    const colAddress = collectionNft.address.toBase58();
+    console.log('Successfully created SHIFT Card Game Collection NFT on-chain:', colAddress);
+
+    // Pin marker to Pinata for persistence across all serverless instances
+    await fetchWithRetry('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${pinataJwt}`,
+      },
+      body: JSON.stringify({
+        pinataContent: {
+          collectionMint: colAddress,
+          createdAt: new Date().toISOString(),
+        },
+        pinataMetadata: { name: 'shift-collection-mint' },
+      }),
+    });
+
+    cachedCollectionMint = colAddress;
+    return colAddress;
+  } catch (err: any) {
+    console.error('Failed to create on-chain collection NFT:', err.message || err);
+    return null;
   }
 }
 
@@ -372,11 +526,28 @@ export async function POST(request: Request) {
     let metadataUrl = '';
     let metaplexMetadata: any;
 
+    // Resolve the official on-chain collection mint
+    let collectionMint: string | null = null;
+    try {
+      collectionMint = await runWithRpcFallback(async (conn) => {
+        return await getOrCreateCollectionMint(conn, mintAuthorityKeypair, pinataJwt);
+      });
+    } catch (colErr: any) {
+      console.warn('Collection mint resolution note:', colErr.message || colErr);
+    }
+
     try {
       metaplexMetadata = toMetaplexMetadata(card);
 
       // Brand all Forge-minted NFTs
       metaplexMetadata.description = 'Forged Shift Playable';
+
+      // Enforce official SHIFT Card Game collection so all cards group into the same wallet folder
+      metaplexMetadata.collection = {
+        name: 'SHIFT Card Game',
+        family: 'SHIFT Card Game',
+        ...(collectionMint ? { address: collectionMint } : {}),
+      };
 
       // Inject the newly generated IPFS image URL
       if (imageUrl) {
@@ -482,7 +653,7 @@ export async function POST(request: Request) {
           }
         });
 
-        return await metaplex.nfts().create({
+        const createInput: any = {
           uri: metadataUrl,
           name: displayName,
           sellerFeeBasisPoints: metaplexMetadata.seller_fee_basis_points ?? 500,
@@ -491,11 +662,35 @@ export async function POST(request: Request) {
           creators: creators,
           isMutable: true,
           useNewMint: mintKeypair,
-        });
+        };
+
+        if (collectionMint) {
+          createInput.collection = new PublicKey(collectionMint);
+          createInput.collectionAuthority = mintAuthorityKeypair;
+        }
+
+        return await metaplex.nfts().create(createInput);
       });
 
       // If fetch succeeds immediately, update mintAddress just in case
       mintAddress = nft.address.toBase58();
+
+      // Ensure on-chain collection verification
+      if (collectionMint && mintAddress) {
+        try {
+          await runWithRpcFallback(async (conn) => {
+            const metaplex = Metaplex.make(conn).use(keypairIdentity(mintAuthorityKeypair));
+            await metaplex.nfts().verifyCollection({
+              mintAddress: new PublicKey(mintAddress),
+              collectionMintAddress: new PublicKey(collectionMint!),
+              collectionAuthority: mintAuthorityKeypair,
+            });
+          });
+          console.log(`Collection verified on-chain for ${mintAddress}`);
+        } catch (vErr: any) {
+          console.log('Collection verification check:', vErr.message || vErr);
+        }
+      }
     } catch (err: any) {
       const isRecoverableError = 
         err.name === 'AccountNotFoundError' || 
@@ -557,6 +752,7 @@ export async function POST(request: Request) {
       success: true,
       minted: true,
       mintAddress,
+      collectionMint,
       metadataUrl,
       imageUrl,
       signature,

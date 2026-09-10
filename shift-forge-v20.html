@@ -908,6 +908,10 @@
         <span class="manual-link" id="manualToggle">or enter address manually</span>
       </div>
       <div class="wallet-status" id="walletStatus" style="margin-top:10px">Not connected — connect your Solana wallet to browse your NFTs</div>
+      <div id="syncFolderWrap" style="display:none; margin-top: 10px;">
+        <button id="syncFolderBtn" class="sync-folder-btn" type="button" style="background: rgba(99,102,241,0.18); border: 1px solid rgba(129,140,248,0.5); border-radius: 8px; padding: 7px 14px; color: #c7d2fe; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;">📁 Group cards into "SHIFT Card Game" folder</button>
+        <span id="syncFolderStatus" style="font-size: 12px; margin-left: 10px; color: var(--text-dim);"></span>
+      </div>
       <div class="fg" id="manualWalletWrap" style="margin-top:10px; display:none">
         <label>Solana Wallet or NFT Token Address</label>
         <input type="text" id="manualWallet" placeholder="e.g. G4Bfqsu6Myqkn1TCAS8gVuWSRrNtJXHPcJzgaRUd6Avh">
@@ -2198,11 +2202,49 @@
     var btn = $('connectBtn');
     btn.textContent = '✓ ' + label + ': ' + short;
     btn.classList.add('connected');
+    if(chain === 'solana' && $('syncFolderWrap')){
+      $('syncFolderWrap').style.display = 'block';
+    }
   }
   function walletFail(msg){
     var st = $('walletStatus');
     st.className = 'wallet-status';
     st.textContent = msg;
+    if($('syncFolderWrap')) $('syncFolderWrap').style.display = 'none';
+  }
+
+  var syncBtn = $('syncFolderBtn');
+  var syncStatus = $('syncFolderStatus');
+  if(syncBtn){
+    syncBtn.addEventListener('click', function(){
+      if(!wallet || !wallet.address || wallet.chain !== 'solana'){
+        alert('Please connect a Solana wallet first.');
+        return;
+      }
+      syncBtn.disabled = true;
+      syncStatus.innerHTML = '<span class="spinner">⚙️</span> Syncing on-chain collection…';
+      fetch(api('/api/sync-collection'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet: wallet.address })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        syncBtn.disabled = false;
+        if(data.success){
+          var msg = data.syncedCount > 0
+            ? '✓ Grouped ' + data.syncedCount + ' cards into "SHIFT Card Game" folder!'
+            : '✓ All ' + (data.totalShiftCards || '') + ' cards already organized in "SHIFT Card Game" folder!';
+          syncStatus.innerHTML = '<span style="color:#34d399">' + msg + ' Refresh wallet.</span>';
+        } else {
+          syncStatus.innerHTML = '<span style="color:#f87171">Sync failed: ' + (data.error || 'unknown') + '</span>';
+        }
+      })
+      .catch(function(err){
+        syncBtn.disabled = false;
+        syncStatus.innerHTML = '<span style="color:#f87171">Sync error: ' + (err && err.message ? err.message : err) + '</span>';
+      });
+    });
   }
 
   $('manualWallet').addEventListener('input', function(){
@@ -3735,7 +3777,7 @@
           if(!res) return;
           playMintSound();
           if((res.minted || res.success) && res.mintAddress){
-            setMint('✓ Minted! Your playable SHIFT card NFT: ' + res.mintAddress, 'ok');
+            setMint('✓ Minted! Card added to your "SHIFT Card Game" collectibles folder: ' + res.mintAddress, 'ok');
             // Mark this NFT as forged in the grid so it can't be minted again
             var forgedMint = selectedNftMint;
             if(forgedMint){

@@ -154,13 +154,17 @@ export async function POST(request: Request) {
         const collGroup = item.grouping?.find((g: any) => g.group_key === 'collection');
         const collectionAddress = collGroup?.group_value || '';
         
+        const isShift = item.content?.metadata?.symbol === 'SHIFT' || item.content?.metadata?.description === 'Forged Shift Playable';
+
         // Use our fast local collection name mapping, or fallback to metadata symbol, collectionAddress
         const collectionName = 
-          COLLECTION_NAMES[collectionAddress] || 
-          collGroup?.collection_metadata?.name || 
-          item.content?.metadata?.symbol || 
-          collectionAddress || 
-          'Other';
+          isShift ? 'SHIFT Card Game' : (
+            COLLECTION_NAMES[collectionAddress] || 
+            collGroup?.collection_metadata?.name || 
+            item.content?.metadata?.symbol || 
+            collectionAddress || 
+            'Other'
+          );
 
         return {
           mint: item.id,

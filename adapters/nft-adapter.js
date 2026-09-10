@@ -239,7 +239,7 @@ export function toMetaplexMetadata(shiftCard) {
     symbol: SHIFT_SYMBOL,
     description: shiftCard.rulesText || '',
     image: imageUrl || '',
-    external_url: `https://shiftcardgame.com/cards/${shiftCard.slug || shiftCard.id}`,
+    external_url: shiftCard.slug ? `https://shiftcardgame.com/cards/${shiftCard.slug}` : 'https://www.shiftforge.io',
     attributes: buildAttributes(shiftCard),
     properties: {
       files: buildFiles(shiftCard.images, shiftCard.animation),
@@ -270,17 +270,16 @@ export function toMetaplexMetadata(shiftCard) {
   }
 
   // ── Collection ───────────────────────────────────────────────────────────
-  if (shiftCard.nft?.collection) {
-    metaplex.collection = {
-      name: shiftCard.set?.name || shiftCard.name,
-      family: 'SHIFT Card Game',
-    };
-    if (shiftCard.nft.collection.address) {
-      metaplex.collection.address = shiftCard.nft.collection.address;
-    }
-    if (shiftCard.nft.collection.verified !== undefined) {
-      metaplex.collection.verified = shiftCard.nft.collection.verified;
-    }
+  // All SHIFT cards share the same collection name & family so wallets group them into one folder
+  metaplex.collection = {
+    name: 'SHIFT Card Game',
+    family: 'SHIFT Card Game',
+  };
+  if (shiftCard.nft?.collection?.address || shiftCard.collectionMint) {
+    metaplex.collection.address = shiftCard.nft?.collection?.address || shiftCard.collectionMint;
+  }
+  if (shiftCard.nft?.collection?.verified !== undefined) {
+    metaplex.collection.verified = shiftCard.nft.collection.verified;
   }
 
   return metaplex;
