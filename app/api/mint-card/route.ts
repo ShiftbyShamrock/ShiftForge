@@ -324,7 +324,7 @@ export async function POST(request: Request) {
     }
 
     const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jDzqUcU51Vq8gwc1pv2n';
-    const SHIFT_MINT_FEE = 250;
+    const SHIFT_MINT_FEE = 50;
     const SOL_MINT_FEE = 0.25;
     const CULTURE_MINT_FEE = 2500000;
 

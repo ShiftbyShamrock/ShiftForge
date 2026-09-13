@@ -870,6 +870,247 @@
     0% { border-color: rgba(255,210,122,0.38); box-shadow: 0 4px 20px rgba(255,210,122,0.14); }
     100% { border-color: rgba(255,238,168,0.88); box-shadow: 0 8px 38px rgba(255,210,122,0.35), 0 0 22px rgba(239,159,39,0.3); }
   }
+
+  /* ═══════════ PROMOTIONAL SHIFT GAME PACKS SECTION ═══════════ */
+  .promo-packs-section {
+    position: relative;
+    margin: 44px 0 24px 0;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(17, 13, 34, 0.96) 0%, rgba(26, 17, 50, 0.94) 50%, rgba(13, 27, 44, 0.96) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 50px rgba(139, 92, 246, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    z-index: 1;
+    animation: promoBorderPulse 6s ease-in-out infinite alternate;
+  }
+  @keyframes promoBorderPulse {
+    0% { border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(139, 92, 246, 0.15); }
+    50% { border-color: rgba(6, 182, 212, 0.55); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 50px rgba(6, 182, 212, 0.22); }
+    100% { border-color: rgba(243, 210, 122, 0.5); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 45px rgba(243, 210, 122, 0.2); }
+  }
+  .promo-packs-glow-bg {
+    position: absolute;
+    top: -30%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.22) 0%, rgba(6, 182, 212, 0.12) 40%, transparent 70%);
+    filter: blur(50px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .promo-packs-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    padding: 38px 36px;
+    z-index: 1;
+  }
+  .promo-pack-visual {
+    flex: 0 0 280px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .pack-aura-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 260px;
+    height: 380px;
+    background: radial-gradient(ellipse, rgba(139, 92, 246, 0.45) 0%, rgba(6, 182, 212, 0.3) 45%, transparent 70%);
+    transform: translate(-50%, -50%);
+    filter: blur(30px);
+    pointer-events: none;
+    z-index: 0;
+    animation: packAuraPulse 4s ease-in-out infinite alternate;
+  }
+  @keyframes packAuraPulse {
+    0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.75; }
+    100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  }
+  .pack-img-frame {
+    position: relative;
+    z-index: 1;
+    border-radius: 16px;
+    overflow: hidden;
+    padding: 3px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.7), rgba(6, 182, 212, 0.7), rgba(243, 210, 122, 0.7));
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(139, 92, 246, 0.4);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
+  }
+  .pack-img-frame:hover {
+    transform: translateY(-6px) scale(1.03) rotate(-1deg);
+    box-shadow: 0 24px 55px rgba(0, 0, 0, 0.9), 0 0 45px rgba(6, 182, 212, 0.6), 0 0 70px rgba(139, 92, 246, 0.5);
+  }
+  .pack-img {
+    display: block;
+    width: 100%;
+    max-width: 260px;
+    height: auto;
+    border-radius: 13px;
+    object-fit: cover;
+  }
+  .promo-packs-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .promo-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: #38bdf8;
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    padding: 5px 14px;
+    border-radius: 999px;
+    width: fit-content;
+    text-transform: uppercase;
+  }
+  .promo-sparkle {
+    color: #f3d27a;
+    font-size: 13px;
+    animation: sparkleSpin 3s linear infinite;
+  }
+  @keyframes sparkleSpin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.25); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  .promo-title {
+    font-family: 'Cinzel', serif;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    margin: 0;
+    background: linear-gradient(135deg, #f3d27a 0%, #ffffff 50%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .promo-highlight {
+    font-family: 'Cinzel', serif;
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: 0.05em;
+  }
+  .promo-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-dim);
+    margin: 0;
+  }
+  .promo-perks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 6px 0;
+  }
+  .perk-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 10px 14px;
+    transition: all 0.25s ease;
+  }
+  .perk-pill:hover {
+    background: rgba(139, 92, 246, 0.12);
+    border-color: rgba(139, 92, 246, 0.35);
+    transform: translateX(3px);
+  }
+  .perk-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .perk-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .perk-text b {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .perk-text span {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .promo-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .promo-play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+    color: #ffffff;
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 13px 26px;
+    border-radius: 12px;
+    text-decoration: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .promo-play-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(6, 182, 212, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+  .promo-play-btn .btn-arrow {
+    transition: transform 0.2s ease;
+  }
+  .promo-play-btn:hover .btn-arrow {
+    transform: translateX(4px);
+  }
+  .promo-network-note {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+  @media (max-width: 820px) {
+    .promo-packs-card {
+      flex-direction: column;
+      padding: 28px 20px;
+      text-align: center;
+    }
+    .promo-eyebrow {
+      margin: 0 auto;
+    }
+    .promo-packs-info {
+      align-items: center;
+    }
+    .promo-perks-grid {
+      grid-template-columns: 1fr;
+      width: 100%;
+      text-align: left;
+    }
+    .promo-actions {
+      justify-content: center;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1007,7 +1248,7 @@
           </div>
           <div class="payment-opt" id="payOptShift" onclick="selectPaymentMethod('shift')">
             <div class="opt-title">SHIFT TOKEN</div>
-            <div class="opt-val">250 SHIFT</div>
+            <div class="opt-val">50 SHIFT</div>
             <div class="fee-note">(Plus Solana Fee)</div>
           </div>
           <div class="payment-opt" id="payOptCulture" onclick="selectPaymentMethod('culture')">
@@ -1064,6 +1305,70 @@
     </div>
     <div class="details" id="details"></div>
   </div>
+
+  <!-- PROMOTIONAL: SHIFT GAME PACKS SECTION -->
+  <section class="promo-packs-section" id="promoPacks">
+    <div class="promo-packs-glow-bg"></div>
+    <div class="promo-packs-card">
+      <div class="promo-pack-visual">
+        <div class="pack-aura-glow"></div>
+        <div class="pack-img-frame">
+          <img src="/shift-game-pack.jpg" alt="SHIFT 3 Card Pack - Series I" class="pack-img" />
+        </div>
+      </div>
+      <div class="promo-packs-info">
+        <div class="promo-eyebrow">
+          <span class="promo-sparkle">✦</span>
+          <span>PROMOTIONAL · IN-GAME BOOSTER PACKS</span>
+        </div>
+        <h2 class="promo-title">SHIFT Game Packs Available In-Game</h2>
+        <div class="promo-highlight">Unlock new cards for your deck.</div>
+        <p class="promo-desc">
+          Ready to expand your collection? Series I booster packs are available directly in the SHIFT game. Open packs to discover powerful Heroes, formidable Monsters, enchanted Artifacts, and game-shifting Spells to customize your battle deck and dominate raids.
+        </p>
+        
+        <div class="promo-perks-grid">
+          <div class="perk-pill">
+            <span class="perk-icon">🃏</span>
+            <div class="perk-text">
+              <b>3 Cards Per Pack</b>
+              <span>Series I Genesis playables</span>
+            </div>
+          </div>
+          <div class="perk-pill">
+            <span class="perk-icon">⚔️</span>
+            <div class="perk-text">
+              <b>Combat Playables</b>
+              <span>PVE, PVP &amp; Co-op Bosses</span>
+            </div>
+          </div>
+          <div class="perk-pill">
+            <span class="perk-icon">📈</span>
+            <div class="perk-text">
+              <b>Level &amp; Evolve</b>
+              <span>Earn XP to reach Level 5</span>
+            </div>
+          </div>
+          <div class="perk-pill">
+            <span class="perk-icon">⚡</span>
+            <div class="perk-text">
+              <b>Web3 Synergy</b>
+              <span>Faction alliances &amp; combos</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="promo-actions">
+          <a href="https://playshift.cards" target="_blank" class="promo-play-btn">
+            <span>Play SHIFT &amp; Open Packs</span>
+            <span class="btn-arrow">➜</span>
+          </a>
+          <span class="promo-network-note">Available on Solana · playshift.cards</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <footer class="forge-footer">
     <div class="brand">Powered by SHIFT on Solana</div>
   </footer>
@@ -3652,7 +3957,7 @@
         msg += ' Connect a wallet to check your balance.';
       }
     } else {
-      var shiftFee = q.feeShift || 250;
+      var shiftFee = q.feeShift || 50;
       msg = 'Mint fee: <span class="fee">' + shiftFee + ' SHIFT</span> (Plus Solana Fee).';
       if(typeof q.walletBalance === 'number'){
         msg += ' Your balance: ' + q.walletBalance + ' SHIFT.';
@@ -3679,7 +3984,7 @@
       .then(function(q){
         currentQuote = q;
         if(!q.configured){
-          setMint('Mint preview: <span class="fee">0.25 SOL</span>, <span class="fee">250 SHIFT</span>, or <span class="fee">2.5M CULTURE</span> per card (Plus Solana Fee). Goes live when the token & treasury are configured.', '');
+          setMint('Mint preview: <span class="fee">0.25 SOL</span>, <span class="fee">50 SHIFT</span>, or <span class="fee">2.5M CULTURE</span> per card (Plus Solana Fee). Goes live when the token & treasury are configured.', '');
           $('paymentSelectorWrap').style.display = 'none';
           return;
         }
@@ -3759,7 +4064,7 @@
               }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
             });
           } else {
-            var shiftFee = q.feeShift || 250;
+            var shiftFee = q.feeShift || 50;
             if(q.walletBalance !== null && q.walletBalance < shiftFee){
               throw new Error('Not enough SHIFT (need ' + shiftFee + ', have ' + q.walletBalance + ').');
             }
@@ -3851,7 +4156,7 @@
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
       var walletPubkey = new Web3.PublicKey(wallet.address);
       var decimals = quote.decimals || 9;
-      var amount = Math.round((quote.feeShift || 250) * Math.pow(10, decimals));
+      var amount = Math.round((quote.feeShift || 50) * Math.pow(10, decimals));
 
       // Derive Associated Token Address (same algorithm as spl-token SDK)
       function getATA(owner, mint){
