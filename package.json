@@ -34,7 +34,8 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vercel": "^59.23.2"
   },
   "engines": {
     "node": ">=18.0.0"
