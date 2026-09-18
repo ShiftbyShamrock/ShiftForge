@@ -167,6 +167,9 @@ export async function POST(request: Request) {
       decimals,
       cultureDecimals,
       rpcUrl: RPC_URL,
+      payer: 'player',
+      rentPayer: 'player',
+      rentFeeNote: 'Player pays Solana rent fees (payer = player)',
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';
