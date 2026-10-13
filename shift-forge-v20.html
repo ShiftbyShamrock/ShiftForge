@@ -1243,17 +1243,17 @@
         <div class="payment-options">
           <div class="payment-opt active" id="payOptSol" onclick="selectPaymentMethod('sol')">
             <div class="opt-title">SOLANA</div>
-            <div class="opt-val">0.25 SOL</div>
+            <div class="opt-val">0.13 SOL</div>
             <div class="fee-note">(Player pays Solana rent · payer = player)</div>
           </div>
           <div class="payment-opt" id="payOptShift" onclick="selectPaymentMethod('shift')">
             <div class="opt-title">SHIFT TOKEN</div>
-            <div class="opt-val">50 SHIFT</div>
+            <div class="opt-val">33 SHIFT</div>
             <div class="fee-note">(Player pays Solana rent · payer = player)</div>
           </div>
           <div class="payment-opt" id="payOptCulture" onclick="selectPaymentMethod('culture')">
             <div class="opt-title">CULTURE SHIFT</div>
-            <div class="opt-val">2.5M CULTURE</div>
+            <div class="opt-val">1M CULTURE</div>
             <div class="fee-note">(Player pays Solana rent · payer = player)</div>
           </div>
         </div>
@@ -3936,7 +3936,7 @@
     var q = currentQuote;
     var msg = '';
     if(selectedPayment === 'sol'){
-      var solFee = q.feeSol || 0.25;
+      var solFee = q.feeSol || 0.13;
       msg = 'Mint fee: <span class="fee">' + solFee + ' SOL</span> (Player pays Solana rent fees · payer = player).';
       if(typeof q.walletBalanceSol === 'number'){
         msg += ' Your balance: ' + q.walletBalanceSol.toFixed(4) + ' SOL.';
@@ -3947,7 +3947,7 @@
         msg += ' Connect a wallet to check your balance.';
       }
     } else if(selectedPayment === 'culture'){
-      var cultureFee = q.feeCulture || 2500000;
+      var cultureFee = q.feeCulture || 1000000;
       msg = 'Mint fee: <span class="fee">' + (cultureFee/1000000).toFixed(1) + 'M CULTURE SHIFT</span> (Player pays Solana rent fees · payer = player).';
       if(typeof q.walletBalanceCulture === 'number'){
         msg += ' Your balance: ' + q.walletBalanceCulture.toLocaleString() + ' CULTURE.';
@@ -3958,7 +3958,7 @@
         msg += ' Connect a wallet to check your balance.';
       }
     } else {
-      var shiftFee = q.feeShift || 50;
+      var shiftFee = q.feeShift || 33;
       msg = 'Mint fee: <span class="fee">' + shiftFee + ' SHIFT</span> (Player pays Solana rent fees · payer = player).';
       if(typeof q.walletBalance === 'number'){
         msg += ' Your balance: ' + q.walletBalance + ' SHIFT.';
@@ -3985,7 +3985,7 @@
       .then(function(q){
         currentQuote = q;
         if(!q.configured){
-          setMint('Mint preview: <span class="fee">0.25 SOL</span>, <span class="fee">50 SHIFT</span>, or <span class="fee">2.5M CULTURE</span> per card (Player pays Solana rent fees · payer = player). Goes live when the token & treasury are configured.', '');
+          setMint('Mint preview: <span class="fee">0.13 SOL</span>, <span class="fee">33 SHIFT</span>, or <span class="fee">1M CULTURE</span> per card (Player pays Solana rent fees · payer = player). Goes live when the token & treasury are configured.', '');
           $('paymentSelectorWrap').style.display = 'none';
           return;
         }
@@ -4039,7 +4039,7 @@
           if(!q.configured) throw new Error('Mint is not live yet (SHIFT token/treasury not configured).');
           
           if(selectedPayment === 'sol'){
-            var solFee = q.feeSol || 0.25;
+            var solFee = q.feeSol || 0.13;
             if(q.walletBalanceSol !== null && q.walletBalanceSol < solFee){
               throw new Error('Not enough SOL (need ' + solFee + ', have ' + q.walletBalanceSol.toFixed(4) + ').');
             }
@@ -4052,7 +4052,7 @@
               }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
             });
           } else if(selectedPayment === 'culture'){
-            var cultureFee = q.feeCulture || 2500000;
+            var cultureFee = q.feeCulture || 1000000;
             if(q.walletBalanceCulture !== null && q.walletBalanceCulture < cultureFee){
               throw new Error('Not enough CULTURE SHIFT (need ' + cultureFee.toLocaleString() + ', have ' + (q.walletBalanceCulture || 0).toLocaleString() + ').');
             }
@@ -4065,7 +4065,7 @@
               }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
             });
           } else {
-            var shiftFee = q.feeShift || 50;
+            var shiftFee = q.feeShift || 33;
             if(q.walletBalance !== null && q.walletBalance < shiftFee){
               throw new Error('Not enough SHIFT (need ' + shiftFee + ', have ' + q.walletBalance + ').');
             }
@@ -4157,7 +4157,7 @@
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
       var walletPubkey = new Web3.PublicKey(wallet.address);
       var decimals = quote.decimals || 9;
-      var amount = Math.round((quote.feeShift || 50) * Math.pow(10, decimals));
+      var amount = Math.round((quote.feeShift || 33) * Math.pow(10, decimals));
 
       // Derive Associated Token Address (same algorithm as spl-token SDK)
       function getATA(owner, mint){
@@ -4280,7 +4280,7 @@
       var c = new W3.Connection(q.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe', 'confirmed');
       var tPub = new W3.PublicKey(q.treasury);
       var wPub = new W3.PublicKey(wallet.address);
-      var lamports = Math.round((q.feeSol || 0.25) * 1e9);
+      var lamports = Math.round((q.feeSol || 0.13) * 1e9);
 
       var tx = new W3.Transaction().add(
         W3.SystemProgram.transfer({
@@ -4350,7 +4350,7 @@
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
       var walletPubkey = new Web3.PublicKey(wallet.address);
       var decimals = quote.cultureDecimals || 9;
-      var amount = Math.round((quote.feeCulture || 2500000) * Math.pow(10, decimals));
+      var amount = Math.round((quote.feeCulture || 1000000) * Math.pow(10, decimals));
 
       function getATA(owner, mint){
         return Web3.PublicKey.findProgramAddressSync(
