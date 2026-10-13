@@ -64,12 +64,12 @@ export default function ForgeClient({ styleContent, cleanBodyContent, inlineScri
 
       // Step 2: Load Solana Web3.js
       try {
-        await loadScript('https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js');
+        await loadScript('/solana-web3.min.js');
         console.log('Solana Web3 loaded.');
       } catch {
-        console.warn('jsDelivr Solana Web3 failed, trying unpkg...');
+        console.warn('Self-hosted Solana Web3 failed, trying jsDelivr...');
         try {
-          await loadScript('https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js');
+          await loadScript('https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js');
           console.log('Solana Web3 loaded from unpkg fallback.');
         } catch {
           console.error('All Solana Web3 sources failed.');

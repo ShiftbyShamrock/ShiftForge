@@ -1314,7 +1314,7 @@
       <div class="promo-pack-visual">
         <div class="pack-aura-glow"></div>
         <div class="pack-img-frame">
-          <img src="/shift-game-pack.jpg" alt="SHIFT 3 Card Pack - Series I" class="pack-img" />
+          <img src="/shift-game-pack.jpg" alt="SHIFT 3 Card Pack - Series I" class="pack-img" loading="lazy" decoding="async" />
         </div>
       </div>
       <div class="promo-packs-info">
@@ -2662,6 +2662,8 @@
 
     // Backend mode: proxy through /api/forge-analyze (server holds the key)
     if(hasBackend()){
+      // AI key not configured on the server? Skip the (image-sized) upload entirely after the first miss.
+      if(window.__forgeAiOff) return Promise.reject(new Error('AI analysis not configured'));
       return fetch(api('/api/forge-analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2669,7 +2671,7 @@
       })
       .then(function(res){
         return res.json().then(function(data){
-          if(!res.ok) throw new Error(data.error || ('Backend HTTP ' + res.status));
+          if(!res.ok){ if(data && data.fallback) window.__forgeAiOff = true; throw new Error(data.error || ('Backend HTTP ' + res.status)); }
           return JSON.parse(String(data.text || '').replace(/```json|```/g, '').trim());
         });
       });
@@ -2823,6 +2825,10 @@
 
     setStatus('Step 1/3 — Forge AI scanning NFT visuals, type, affinity & abilities…', 'pulse');
 
+    // Kick off the on-chain ownership check in parallel with the AI scan (saves a full round-trip)
+    var ownershipPre = (hasBackend() && wallet && nftId) ? verifyOwnershipBackend(wallet.chain, wallet.address, nftId) : null;
+    if(ownershipPre) ownershipPre.catch(function(){});
+
     claudeAnalyze(tokenName, collection, description, traitStr, requestedType)
       .catch(function(err){
         console.warn('Claude analysis failed, using local fallback:', err);
@@ -2938,7 +2944,7 @@
         var ownershipCheck;
         if(hasBackend() && wallet && nftId){
           setStatus('Verifying on-chain that ' + wallet.address.slice(0,6) + '… owns this NFT…', 'pulse');
-          ownershipCheck = verifyOwnershipBackend(wallet.chain, wallet.address, nftId)
+          ownershipCheck = (ownershipPre || verifyOwnershipBackend(wallet.chain, wallet.address, nftId))
             .then(function(owned){
               cardData.ownership.verified = owned;
               cardData.ownership.note = owned

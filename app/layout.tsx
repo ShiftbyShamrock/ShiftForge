@@ -21,6 +21,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preload" href="/buffer-standalone.js" as="script" />
+        <link rel="preload" href="/solana-web3.min.js" as="script" />
+      </head>
       <body>{children}</body>
     </html>
   );
