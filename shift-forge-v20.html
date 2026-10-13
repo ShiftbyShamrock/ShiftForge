@@ -440,6 +440,7 @@
   .dl-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .mint-btn { background: linear-gradient(135deg, #f3d27a, #c9912a) !important; color: #1a1208 !important; font-weight: 800 !important; border: none !important; }
   .mint-btn:hover { filter: brightness(1.08); }
+  .dl-row .mint-btn { flex: 1 1 100%; width: 100%; padding: 15px 18px; font-size: 16px; letter-spacing: 0.4px; }
   .mint-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.3); }
   .mint-status { margin-top: 10px; font-size: 13px; line-height: 1.5; color: var(--text-dim); min-height: 18px; }
   .mint-status .ok { color: #a8d97a; }
@@ -1262,7 +1263,6 @@
         <button class="dl-btn" id="dlPngBtn">⬇ Download card PNG</button>
         <button class="dl-btn" id="dlJsonBtn">⬇ Export JSON</button>
         <button class="dl-btn mint-btn" id="mintBtn">⚡ Mint as playable NFT</button>
-        <button class="dl-btn duel-btn" id="initMatchBtn" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:1px solid rgba(16,185,129,0.5);font-weight:700;">⚔️ Init Match (payer = player)</button>
       </div>
       <div class="mint-status" id="mintStatus"></div>
       
@@ -4571,9 +4571,6 @@
   }
 
   $('mintBtn').addEventListener('click', mintCard);
-  if($('initMatchBtn')){
-    $('initMatchBtn').addEventListener('click', initMatchFromForge);
-  }
 
   // ═══════════ DOWNLOADS ═══════════
   $('dlPngBtn').addEventListener('click', function(){
