@@ -2800,6 +2800,20 @@
   }
 
   // ═══════════ MAIN FLOW ═══════════
+  // Never let a slow network call stall the Forge: reject after `ms` so local fallbacks take over.
+  function withTimeout(p, ms, msg){
+    return new Promise(function(resolve, reject){
+      var tm = setTimeout(function(){ reject(new Error(msg || 'Timed out')); }, ms);
+      p.then(function(v){ clearTimeout(tm); resolve(v); }, function(e){ clearTimeout(tm); reject(e); });
+    });
+  }
+
+  // Preflight: if server-side AI isn't configured, skip uploading the NFT image on every forge.
+  if(hasBackend()){
+    fetch(api('/api/forge-analyze')).then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.configured === false) window.__forgeAiOff = true; })
+      .catch(function(){});
+  }
   $('genBtn').addEventListener('click', generate);
 
   function generate(){
@@ -2826,10 +2840,10 @@
     setStatus('Step 1/3 — Forge AI scanning NFT visuals, type, affinity & abilities…', 'pulse');
 
     // Kick off the on-chain ownership check in parallel with the AI scan (saves a full round-trip)
-    var ownershipPre = (hasBackend() && wallet && nftId) ? verifyOwnershipBackend(wallet.chain, wallet.address, nftId) : null;
+    var ownershipPre = (hasBackend() && wallet && nftId) ? withTimeout(verifyOwnershipBackend(wallet.chain, wallet.address, nftId), 15000, 'Ownership check timed out') : null;
     if(ownershipPre) ownershipPre.catch(function(){});
 
-    claudeAnalyze(tokenName, collection, description, traitStr, requestedType)
+    withTimeout(claudeAnalyze(tokenName, collection, description, traitStr, requestedType), 25000, 'AI scan timed out')
       .catch(function(err){
         console.warn('Claude analysis failed, using local fallback:', err);
         warning = 'Must Mint to play SHIFT Fantasy Card Game';
@@ -2944,7 +2958,7 @@
         var ownershipCheck;
         if(hasBackend() && wallet && nftId){
           setStatus('Verifying on-chain that ' + wallet.address.slice(0,6) + '… owns this NFT…', 'pulse');
-          ownershipCheck = (ownershipPre || verifyOwnershipBackend(wallet.chain, wallet.address, nftId))
+          ownershipCheck = (ownershipPre || withTimeout(verifyOwnershipBackend(wallet.chain, wallet.address, nftId), 15000, 'Ownership check timed out'))
             .then(function(owned){
               cardData.ownership.verified = owned;
               cardData.ownership.note = owned

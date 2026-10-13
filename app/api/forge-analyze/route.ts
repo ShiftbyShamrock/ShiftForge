@@ -16,6 +16,15 @@ import { NextResponse } from 'next/server';
  * Fallback response (when key is missing):
  *   { error: string, fallback: true }  — status 503
  */
+/**
+ * GET /api/forge-analyze
+ * Lightweight config check so the client can skip uploading the NFT image
+ * when AI analysis is not configured (avoids a slow, pointless upload).
+ */
+export async function GET() {
+  return NextResponse.json({ configured: Boolean(process.env.ANTHROPIC_API_KEY) });
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY;
