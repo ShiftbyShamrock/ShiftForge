@@ -2412,6 +2412,9 @@
     updateCollBadge();
 
     var imageUrl = thumbEl.getAttribute('data-image') || '';
+    // If the thumbnail already points at our proxy, recover the original remote URL for fallback proxy attempts
+    var origUrl = imageUrl;
+    try { var mm = imageUrl.match(/\/api\/proxy-image\?url=([^&]+)/); if(mm) origUrl = decodeURIComponent(mm[1]); } catch(e){}
     if(!imageUrl){
       checkReady();
       return;
@@ -2450,7 +2453,7 @@
       fetch(api('/api/proxy-image'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: imageUrl })
+        body: JSON.stringify({ url: origUrl })
       })
       .then(function(r){
         if(!r.ok) throw new Error('Proxy HTTP status ' + r.status);
@@ -2515,7 +2518,7 @@
           };
           fallbackImg.src = imageUrl;
         };
-        getImg.src = api('/api/proxy-image') + '?url=' + encodeURIComponent(imageUrl) + '&t=' + Date.now();
+        getImg.src = api('/api/proxy-image') + '?url=' + encodeURIComponent(origUrl) + '&t=' + Date.now();
       });
     };
     img.src = imageUrl;
