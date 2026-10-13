@@ -2205,6 +2205,76 @@
     return null;
   }
 
+  // ═══════════ WALLET VERIFICATION (sign-in message — no transaction, no fee) ═══════════
+  function bytesToBase64(bytes){
+    var s = '';
+    for(var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s);
+  }
+  function randomNonce(){
+    var a = new Uint8Array(12);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.prototype.map.call(a, function(x){ return ('0' + x.toString(16)).slice(-2); }).join('');
+  }
+  function walletVerifyNote(msg){
+    var st = $('walletStatus');
+    if(st){ st.textContent = msg; st.className = 'wallet-status'; }
+  }
+  function markWalletVerified(){
+    if(!wallet) return;
+    var short = wallet.address.length > 12 ? wallet.address.slice(0,6) + '…' + wallet.address.slice(-4) : wallet.address;
+    var st = $('walletStatus');
+    if(st){ st.textContent = '🔒 ' + wallet.provider + ' verified: ' + short + ' — signature confirmed, transactions are secured to this wallet'; st.className = 'wallet-status ok'; }
+    var btn = $('connectBtn');
+    if(btn){ btn.textContent = '🔒 ' + wallet.provider + ' verified: ' + short; btn.classList.add('connected'); }
+  }
+  // Resolves once the connected wallet has signed a fresh verification message that the server accepted.
+  function requestWalletVerification(){
+    if(!wallet || wallet.chain !== 'solana') return Promise.reject(new Error('Connect a Solana wallet first.'));
+    if(!hasBackend()) return Promise.resolve(true);
+    // Reuse a proof signed in the last 20 hours (server accepts 24h)
+    if(wallet.proof && wallet.proofAt && (Date.now() - wallet.proofAt) < 20 * 3600 * 1000) return Promise.resolve(true);
+    var d = detectWalletProvider();
+    var prov = d && d.provider;
+    if(!prov || typeof prov.signMessage !== 'function'){
+      return Promise.reject(new Error('This wallet cannot sign verification messages. Please use Phantom, Solflare or Backpack.'));
+    }
+    var pk = prov.publicKey ? prov.publicKey.toString() : '';
+    if(pk && pk !== wallet.address){
+      return Promise.reject(new Error('The wallet in your extension does not match the selected address. Click Connect Wallet and connect your own wallet.'));
+    }
+    var message = [
+      'SHIFT Forge wallet verification',
+      'Wallet: ' + wallet.address,
+      'Domain: shiftforge.io',
+      'Nonce: ' + randomNonce(),
+      'Issued: ' + new Date().toISOString(),
+      'Signing proves you own this wallet. It does not send a transaction or cost any fees.'
+    ].join('\n');
+    walletVerifyNote('Please sign the free verification message in your wallet…');
+    var encoded = new TextEncoder().encode(message);
+    var targetWallet = wallet;
+    return Promise.resolve(prov.signMessage(encoded, 'utf8')).then(function(res){
+      var sig = (res && res.signature) ? res.signature : res;
+      if(!(sig instanceof Uint8Array)) sig = new Uint8Array(sig);
+      var signature = bytesToBase64(sig);
+      return fetch(api('/api/verify-wallet'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet: targetWallet.address, message: message, signature: signature })
+      }).then(function(r){
+        return r.json().then(function(data){
+          if(!r.ok || !data.verified) throw new Error(data.error || 'Wallet verification failed');
+          if(wallet === targetWallet){
+            wallet.proof = { message: message, signature: signature };
+            wallet.proofAt = Date.now();
+            markWalletVerified();
+          }
+          return true;
+        });
+      });
+    });
+  }
+
   function connectWallet(){
     var detected = detectWalletProvider();
     if(!detected){
@@ -2215,6 +2285,11 @@
       var pk = (resp && resp.publicKey) || detected.provider.publicKey;
       setWallet('solana', pk.toString(), detected.name);
       try { loadWalletNFTs(pk.toString()); } catch(e){ console.error('NFT load error:', e); }
+      // Wallet verification: player signs a free message (no transaction, no fee) to prove they own this wallet
+      requestWalletVerification().catch(function(e){
+        console.warn('Wallet verification not completed:', e);
+        walletVerifyNote('Wallet connected but not verified yet — you will be asked to sign a free verification message before minting. (' + (e && e.message ? e.message : 'signature declined') + ')');
+      });
     }).catch(function(err){
       console.error('Wallet connect error:', err);
       walletFail(detected.name + ' connection rejected.');
@@ -2840,7 +2915,7 @@
     setStatus('Step 1/3 — Forge AI scanning NFT visuals, type, affinity & abilities…', 'pulse');
 
     // Kick off the on-chain ownership check in parallel with the AI scan (saves a full round-trip)
-    var ownershipPre = (hasBackend() && wallet && nftId) ? withTimeout(verifyOwnershipBackend(wallet.chain, wallet.address, nftId), 15000, 'Ownership check timed out') : null;
+    var ownershipPre = (hasBackend() && wallet && nftId) ? withTimeout(verifyOwnershipBackend(wallet.chain, wallet.address, nftId), 25000, 'Ownership check timed out') : null;
     if(ownershipPre) ownershipPre.catch(function(){});
 
     withTimeout(claudeAnalyze(tokenName, collection, description, traitStr, requestedType), 25000, 'AI scan timed out')
@@ -2958,7 +3033,7 @@
         var ownershipCheck;
         if(hasBackend() && wallet && nftId){
           setStatus('Verifying on-chain that ' + wallet.address.slice(0,6) + '… owns this NFT…', 'pulse');
-          ownershipCheck = (ownershipPre || withTimeout(verifyOwnershipBackend(wallet.chain, wallet.address, nftId), 15000, 'Ownership check timed out'))
+          ownershipCheck = (ownershipPre || withTimeout(verifyOwnershipBackend(wallet.chain, wallet.address, nftId), 25000, 'Ownership check timed out'))
             .then(function(owned){
               cardData.ownership.verified = owned;
               cardData.ownership.note = owned
@@ -2968,7 +3043,7 @@
             })
             .catch(function(err){
               cardData.ownership.note = 'Ownership check unavailable: ' + err.message;
-              warning += (warning ? '\n' : '') + 'Ownership verification unavailable (' + err.message + ') — card stamped UNVERIFIED.';
+              warning += (warning ? '\n' : '') + 'Ownership could not be confirmed right now (' + err.message + ') — it will be checked on-chain again when you mint.';
             });
         } else {
           cardData.ownership.verified = false;
@@ -4069,7 +4144,8 @@
         }).then(function(r){ return r.json(); }).catch(function(){ return { forged: false }; })
       : Promise.resolve({ forged: false });
 
-    checkPromise.then(function(checkResult){
+    setMint('Verifying wallet…');
+    requestWalletVerification().then(function(){ return checkPromise; }).then(function(checkResult){
       if(checkResult.forged){
         $('mintBtn').disabled = false;
         setMint('', '');
@@ -4094,7 +4170,7 @@
               $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
               return fetch(api('/api/mint-card'), {
                 method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON(), proof: wallet.proof })
               }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
             });
           } else if(selectedPayment === 'culture'){
@@ -4107,7 +4183,7 @@
               $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
               return fetch(api('/api/mint-card'), {
                 method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON(), proof: wallet.proof })
               }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
             });
           } else {
@@ -4120,7 +4196,7 @@
               $('mintStatus').innerHTML = '<div class="mint-waiting"><span class="spinner">⚙️</span> <b>Payment confirmed! Forging your card on-chain…</b><br>Please wait — this can take up to 2 minutes. Do not close or refresh this page.</div>';
               return fetch(api('/api/mint-card'), {
                 method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON() })
+                body: JSON.stringify({ signature: signature, wallet: wallet.address, card: buildCardJSON(), proof: wallet.proof })
               }).then(function(r){ return r.json().then(function(d){ if(!r.ok) throw new Error(d.error||('HTTP '+r.status)); return d; }); });
             });
           }

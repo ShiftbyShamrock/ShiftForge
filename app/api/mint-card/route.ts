@@ -26,6 +26,8 @@ import { NextResponse } from 'next/server';
 import bs58 from 'bs58';
 import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 import { Buffer } from 'buffer';
+import { verifyWalletProof } from '@/lib/walletProof';
+import { checkNftOwnership, isValidPublicKey } from '@/lib/ownership';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const CULTURE_TOKEN_MINT = 'BtpQ3WZsA5rpA45iNWxQJ9djSurnXhrDYMYnyNc1LDrK';
@@ -38,6 +40,16 @@ const RPC_ENDPOINTS = [
 // In-memory lock set to prevent race condition duplicate mints
 // (protects the window between Pinata check and Pinata marker write)
 const mintingInProgress = new Set<string>();
+
+// Payment-signature locks auto-expire (3 min) so a failed attempt can never block a retry forever.
+const paymentLocks = new Map<string, number>();
+const PAYMENT_LOCK_MS = 3 * 60 * 1000;
+function isPaymentLocked(sig: string): boolean {
+  const t = paymentLocks.get(sig);
+  if (!t) return false;
+  if (Date.now() - t > PAYMENT_LOCK_MS) { paymentLocks.delete(sig); return false; }
+  return true;
+}
 
 async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>): Promise<T> {
   let lastError: any = null;
@@ -287,10 +299,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const { signature, wallet, card } = body as {
+    const { signature, wallet, card, proof } = body as {
       signature?: string;
       wallet?: string;
       card?: Record<string, any>;
+      proof?: { message: string; signature: string };
     };
 
     // --- Input validation ---
@@ -302,6 +315,15 @@ export async function POST(request: Request) {
     }
     if (!card || typeof card !== 'object') {
       return NextResponse.json({ error: 'Missing or invalid "card"' }, { status: 400 });
+    }
+
+    // --- Wallet verification: the player must have signed the connect-wallet message ---
+    const walletProof = verifyWalletProof(wallet, proof);
+    if (!walletProof.ok) {
+      return NextResponse.json(
+        { error: `Wallet verification failed: ${walletProof.error}. Please reconnect your wallet and try again.` },
+        { status: 401 },
+      );
     }
 
     // Ensure server-side credentials are present before charging user/performing on-chain actions
@@ -421,6 +443,55 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Payment must come from the verified wallet (blocks someone reusing another player's payment) ---
+    const feePayerKey = typeof accountKeys.get === 'function' ? accountKeys.get(0) : accountKeys[0];
+    if (!feePayerKey || feePayerKey.toString() !== wallet) {
+      return NextResponse.json(
+        { error: 'Payment was not made by the connected wallet.' },
+        { status: 403 },
+      );
+    }
+
+    // --- One payment = one mint: reject a payment signature that was already used ---
+    const paymentLockKey = signature;
+    if (isPaymentLocked(paymentLockKey)) {
+      return NextResponse.json(
+        { error: 'This payment is already being processed. Please wait for the mint to complete.' },
+        { status: 409 },
+      );
+    }
+    try {
+      const payMarkerUrl = `https://api.pinata.cloud/data/pinList?status=pinned&metadata[name]=${encodeURIComponent(`shift-payment-${signature}`)}&pageLimit=1`;
+      const payCheck = await fetchWithRetry(payMarkerUrl, { method: 'GET', headers: { Authorization: `Bearer ${pinataJwt}` } });
+      if (payCheck.ok) {
+        const payData = await payCheck.json();
+        if ((payData.rows?.length ?? 0) > 0) {
+          return NextResponse.json(
+            { error: 'This payment was already used for a mint. Please pay again to forge another card.' },
+            { status: 409 },
+          );
+        }
+      }
+    } catch (err: any) {
+      console.warn('Payment replay check unavailable:', err?.message || err);
+    }
+    paymentLocks.set(paymentLockKey, Date.now());
+
+    // --- Server-side ownership check: the wallet must really own the NFT being forged ---
+    const ownershipTarget = card.nftMint || card.ownership?.nft || '';
+    if (ownershipTarget && isValidPublicKey(ownershipTarget)) {
+      const own = await checkNftOwnership(wallet, ownershipTarget);
+      if (own.owned === false) {
+        paymentLocks.delete(paymentLockKey);
+        return NextResponse.json(
+          { error: 'The connected wallet does not own this NFT, so it cannot be forged.' },
+          { status: 403 },
+        );
+      }
+      if (own.owned === null) {
+        console.warn('Ownership lookup unavailable at mint; continuing (payment + wallet signature verified):', own.error);
+      }
+    }
     // --- Step 0: Server-side Duplicate Forge Check ---
     // Prioritize card.nftMint (explicit mint address from client) over ownership.nft (may be name)
     const sourceNft = card.nftMint || card.ownership?.nft || '';
@@ -708,6 +779,7 @@ export async function POST(request: Request) {
       } else {
         console.error('Solana on-chain NFT minting failed:', err);
         if (sourceNft) mintingInProgress.delete(sourceNft);
+        paymentLocks.delete(signature);
         return NextResponse.json(
           { error: `On-chain NFT minting failed: ${err.message}` },
           { status: 500 }
@@ -747,6 +819,21 @@ export async function POST(request: Request) {
       }
     }
 
+    // --- Step 5: Pin a payment marker so this payment signature can never mint twice ---
+    try {
+      await fetchWithRetry('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pinataJwt}` },
+        body: JSON.stringify({
+          pinataContent: { signature, wallet, mintAddress, usedAt: new Date().toISOString() },
+          pinataMetadata: { name: `shift-payment-${signature}` },
+        }),
+      });
+    } catch (payMarkerErr) {
+      console.warn('Failed to pin payment marker:', payMarkerErr);
+    } finally {
+      paymentLocks.delete(signature);
+    }
     // Return full success details
     return NextResponse.json({
       success: true,
@@ -765,6 +852,7 @@ export async function POST(request: Request) {
       const body2 = await request.clone().json().catch(() => null);
       const failedNft = body2?.card?.nftMint || body2?.card?.ownership?.nft || '';
       if (failedNft) mintingInProgress.delete(failedNft);
+      if (body2?.signature) paymentLocks.delete(body2.signature);
     } catch { /* ignore cleanup errors */ }
     return NextResponse.json({ error: message }, { status: 500 });
   }
