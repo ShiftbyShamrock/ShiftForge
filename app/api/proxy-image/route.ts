@@ -85,7 +85,7 @@ async function fetchResilientImage(url: string) {
       const response = await fetch(targetUrl, {
         headers: {
           'Accept': 'image/*',
-          'User-Agent': 'SHIFT-Forge/1.0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
         },
       });
       if (response.ok) return response;
@@ -102,7 +102,7 @@ async function fetchResilientImage(url: string) {
       const response = await fetch(dataspriteUrl, {
         headers: {
           'Accept': 'image/*',
-          'User-Agent': 'SHIFT-Forge/1.0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
         },
       });
       if (response.ok) {
@@ -119,7 +119,7 @@ async function fetchResilientImage(url: string) {
   return await fetch(url, {
     headers: {
       'Accept': 'image/*',
-      'User-Agent': 'SHIFT-Forge/1.0',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
     }
   });
 }

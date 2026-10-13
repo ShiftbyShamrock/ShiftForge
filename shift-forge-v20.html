@@ -2468,31 +2468,45 @@
       })
       .catch(function(err){
         console.error('Proxy fetch failed:', err);
-        // Still show the image visually even if we can't get base64
-        var fallbackImg = new Image();
-        fallbackImg.onload = function(){
-          var uz = $('uploadZone');
-          uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
-          uz.classList.add('has-image');
-          uploadedImage = imageUrl;
-          imgEl = fallbackImg;
-          checkReady();
+        // Retry through the same-origin GET proxy: same-origin pixels never taint the canvas.
+        var getImg = new Image();
+        getImg.onload = function(){
+          try {
+            var c2 = document.createElement('canvas');
+            c2.width = getImg.naturalWidth || getImg.width;
+            c2.height = getImg.naturalHeight || getImg.height;
+            c2.getContext('2d').drawImage(getImg, 0, 0);
+            var du = c2.toDataURL('image/png');
+            uploadedB64 = du.split(',')[1];
+            uploadedMime = 'image/png';
+          } catch(e){ console.warn('GET proxy canvas export failed', e); }
+          applyImage(getImg.src, getImg);
         };
-        fallbackImg.onerror = function(){
-          console.warn('Fallback image also failed to load (connection blocked)');
-          var uz = $('uploadZone');
-          uz.innerHTML = '<div style="font-size:12px; color:var(--gold); padding:20px; text-align:center;">⚠️ Artwork connection reset.<br>You can still forge & mint this card!</div>';
-          uz.classList.add('has-image');
-          uploadedImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-          
-          var blankImg = new Image();
-          blankImg.onload = function(){
-            imgEl = blankImg;
-            checkReady();
+        getImg.onerror = function(){
+          // Last resort: show image visually only. Never use it as canvas art (it would taint the canvas and break minting).
+          var fallbackImg = new Image();
+          fallbackImg.onload = function(){
+            var uz = $('uploadZone');
+            uz.innerHTML = '<img src="' + imageUrl + '" alt="NFT"><div class="uz-change">Change image</div>';
+            uz.classList.add('has-image');
+            uploadedImage = imageUrl;
+            var blank = new Image();
+            blank.onload = function(){ imgEl = blank; checkReady(); };
+            blank.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
           };
-          blankImg.src = uploadedImage;
+          fallbackImg.onerror = function(){
+            console.warn('Fallback image also failed to load (connection blocked)');
+            var uz = $('uploadZone');
+            uz.innerHTML = '<div style="font-size:12px; color:var(--gold); padding:20px; text-align:center;">⚠️ Artwork connection reset.<br>You can still forge & mint this card!</div>';
+            uz.classList.add('has-image');
+            uploadedImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+            var blankImg = new Image();
+            blankImg.onload = function(){ imgEl = blankImg; checkReady(); };
+            blankImg.src = uploadedImage;
+          };
+          fallbackImg.src = imageUrl;
         };
-        fallbackImg.src = imageUrl; // load without crossOrigin — shows but can't canvas-extract
+        getImg.src = api('/api/proxy-image') + '?url=' + encodeURIComponent(imageUrl) + '&t=' + Date.now();
       });
     };
     img.src = imageUrl;
@@ -3909,7 +3923,7 @@
       hp: v.health
     };
     drawCard(v, 0);
-    out.imageDataUrl = $('cardCanvas').toDataURL('image/png');
+    try { out.imageDataUrl = $('cardCanvas').toDataURL('image/png'); } catch(e){ console.warn('Canvas export blocked (tainted); server will render from source art', e); }
     out.nftMint = selectedNftMint || '';
     refreshAll();
     return out;
