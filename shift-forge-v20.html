@@ -2243,9 +2243,18 @@
   });
 
   // ═══════════ NFT PICKER (Helius DAS API via backend proxy) ═══════════
+  window.thumbErr = function(img){
+    if(!img.dataset.pf && img.src.indexOf('/api/proxy-image') === -1){
+      img.dataset.pf = '1';
+      img.src = '/api/proxy-image?url=' + encodeURIComponent(img.src);
+    } else {
+      img.style.display = 'none';
+    }
+  };
+
   function cleanImageURL(url) {
     if (!url) return '';
-    if (url.indexOf('permagate.io') !== -1 || url.indexOf('arweave.net') !== -1 || url.indexOf('irys.xyz') !== -1) {
+    if (/permagate\.io|arweave\.net|irys\.xyz|ipfs\.io|dweb\.link|cloudflare-ipfs\.com|nftstorage\.link|\/ipfs\//i.test(url) && url.indexOf('/api/proxy-image') === -1) {
       return '/api/proxy-image?url=' + encodeURIComponent(url);
     }
     return url;
@@ -2336,7 +2345,7 @@
 
           var imgSrc = cleanImageURL(nft.image || '');
           var overlayHtml = nft.forged ? '<div class="forged-overlay">🔒 FORGED</div>' : '';
-          thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="this.style.display=\'none\'">' +
+          thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="thumbErr(this)" referrerpolicy="no-referrer" loading="lazy">' +
             '<div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>' + overlayHtml;
           
           if (nft.forged) {

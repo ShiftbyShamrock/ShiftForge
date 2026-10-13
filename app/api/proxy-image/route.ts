@@ -87,6 +87,7 @@ async function fetchResilientImage(url: string) {
           'Accept': 'image/*',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
         },
+        signal: AbortSignal.timeout(6000),
       });
       if (response.ok) return response;
       console.warn(`[Proxy Image] Permagate sandboxed URL returned status ${response.status}. Trying datasprite cdn...`);
@@ -104,6 +105,7 @@ async function fetchResilientImage(url: string) {
           'Accept': 'image/*',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
         },
+        signal: AbortSignal.timeout(6000),
       });
       if (response.ok) {
         console.log(`[Proxy Image] Success fetching from datasprite cdn: ${dataspriteUrl}`);
@@ -115,13 +117,39 @@ async function fetchResilientImage(url: string) {
     }
   }
 
-  // Try 3: Original URL direct fetch
-  return await fetch(url, {
-    headers: {
-      'Accept': 'image/*',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  // Try 3: Original URL direct fetch (with timeout), then public IPFS gateways if it's an IPFS URL
+  const candidates: string[] = [url];
+  const ipfsMatch = url.match(/\/ipfs\/([A-Za-z0-9]+(?:\/[^?#]*)?)/);
+  if (ipfsMatch) {
+    const path = ipfsMatch[1];
+    for (const gw of [
+      'https://gateway.pinata.cloud/ipfs/',
+      'https://cloudflare-ipfs.com/ipfs/',
+      'https://dweb.link/ipfs/',
+      'https://ipfs.io/ipfs/',
+    ]) {
+      const c = gw + path;
+      if (!candidates.includes(c)) candidates.push(c);
     }
-  });
+  }
+  let last: Response | null = null;
+  for (const candidate of candidates) {
+    try {
+      const response = await fetch(candidate, {
+        headers: {
+          'Accept': 'image/*',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (response.ok) return response;
+      last = response;
+    } catch (err: any) {
+      console.warn(`[Proxy Image] ${candidate} failed: ${err.message}`);
+    }
+  }
+  if (last) return last;
+  return new Response('Upstream unreachable', { status: 502 });
 }
 
 /**
@@ -187,7 +215,7 @@ export async function GET(request: Request) {
 
     if (!response.ok) {
       return new Response(`Failed to fetch image: ${response.status}`, { 
-        status: response.status,
+        status: 502,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
         }
@@ -200,8 +228,9 @@ export async function GET(request: Request) {
     return new Response(buffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400',
+        'Cache-Control': 'public, max-age=86400, s-maxage=604800',
         'Access-Control-Allow-Origin': '*',
+        'Cross-Origin-Resource-Policy': 'cross-origin',
       },
     });
   } catch (err: any) {
@@ -214,3 +243,6 @@ export async function GET(request: Request) {
     });
   }
 }
+
+export const maxDuration = 30;
+
