@@ -2335,26 +2335,27 @@
     return url;
   }
 
-  function loadWalletNFTs(walletAddress){
-    var picker = $('nftPicker');
-    var grid = $('nftGrid');
-    grid.innerHTML = '<div class="nft-loading">Loading your NFTs…</div>';
-    picker.classList.add('show');
+  // Per-session cache of each wallet's NFT list: repeat loads show instantly while a fresh copy loads behind it.
+  function readNftCache(w){
+    try {
+      var raw = sessionStorage.getItem('shiftForgeNfts:' + w);
+      if(!raw) return null;
+      var o = JSON.parse(raw);
+      if(!o || !o.data || (Date.now() - o.t) > 10 * 60 * 1000) return null;
+      return o.data;
+    } catch(e){ return null; }
+  }
+  function saveNftCache(w, data){
+    try { sessionStorage.setItem('shiftForgeNfts:' + w, JSON.stringify({ t: Date.now(), data: data })); } catch(e){}
+  }
+  function nftListSignature(data){
+    return (data.nfts || []).map(function(n){ return n.mint + (n.forged ? '!' : ''); }).join(',');
+  }
 
-    // Call our backend proxy which uses the Helius DAS getAssetsByOwner API.
-    // This finds ALL NFTs: Metaplex Core, legacy SPL, Token-2022, compressed.
-    fetch(api('/api/wallet-nfts'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wallet: walletAddress })
-    })
-    .then(function(res){
-      return res.json().then(function(data){
-        if(!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
-        return data;
-      });
-    })
-    .then(function(data){
+  window.loadWalletNFTs = function(w){ loadWalletNFTs(w); };
+
+  function renderNFTData(data, walletAddress){
+    var grid = $('nftGrid');
       if(data.resolvedOwner){
         setWallet('solana', data.resolvedOwner, 'Solana Wallet');
       }
@@ -2467,13 +2468,54 @@
         }
         targetThumb.click();
       }
-    })
-    .catch(function(err){
-      console.error('Failed to load wallet NFTs:', err);
-      grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + err.message + '</div>';
-    });
   }
 
+  function loadWalletNFTs(walletAddress){
+    var picker = $('nftPicker');
+    var grid = $('nftGrid');
+    picker.classList.add('show');
+
+    // Show the cached list immediately (if any), then refresh in the background.
+    var cached = readNftCache(walletAddress);
+    var shownSig = null;
+    if(cached){
+      renderNFTData(cached, walletAddress);
+      shownSig = nftListSignature(cached);
+    } else {
+      grid.innerHTML = '<div class="nft-loading">Loading your NFTs…</div>';
+    }
+
+    // Call our backend proxy which uses the Helius DAS getAssetsByOwner API.
+    // This finds ALL NFTs: Metaplex Core, legacy SPL, Token-2022, compressed.
+    function fetchNfts(){
+      return fetch(api('/api/wallet-nfts'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet: walletAddress })
+      }).then(function(res){
+        return res.json().then(function(data){
+          if(!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+          return data;
+        });
+      });
+    }
+
+    // One automatic retry so a transient hiccup doesn't leave the player on an error screen.
+    fetchNfts()
+      .catch(function(){ return new Promise(function(r){ setTimeout(r, 700); }).then(fetchNfts); })
+      .then(function(data){
+        saveNftCache(walletAddress, data);
+        var sig = nftListSignature(data);
+        if(shownSig !== null && sig === shownSig) return;      // cached list was already current
+        if(shownSig !== null && selectedNftMint) return;       // never disturb an NFT the player already picked
+        renderNFTData(data, walletAddress);
+      })
+      .catch(function(err){
+        if(shownSig !== null) return;                          // keep showing the cached list
+        console.error('Failed to load wallet NFTs:', err);
+        grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + err.message + ' <button class="dl-btn" style="margin-left:8px" onclick="loadWalletNFTs(\'' + walletAddress + '\')">Retry</button></div>';
+      });
+  }
   function selectNFT(mintAddress, thumbEl){
     var prev = document.querySelector('.nft-thumb.selected');
     if(prev) prev.classList.remove('selected');
