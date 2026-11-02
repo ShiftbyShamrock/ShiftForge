@@ -93,7 +93,7 @@ export default function ForgeClient({ styleContent, cleanBodyContent, inlineScri
   if (!mounted) {
     return (
       <div style={{
-        background: '#0a0d14',
+        background: '#07050e',
         color: '#ffffff',
         height: '100vh',
         display: 'flex',
