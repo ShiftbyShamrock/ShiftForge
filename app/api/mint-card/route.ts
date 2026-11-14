@@ -111,33 +111,28 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3, de
 export function getMintAuthorityKeypair(): Keypair {
   const secret = process.env.MINT_AUTHORITY_SECRET;
   if (!secret) {
-    console.warn('MINT_AUTHORITY_SECRET environment variable is not configured. Using generated keypair fallback.');
-    return Keypair.generate();
+    // Never fall back to a random keypair: that would silently mint with an unfunded, unrelated authority.
+    throw new Error('MINT_AUTHORITY_SECRET is not configured');
   }
 
   const trimmedSecret = secret.trim();
 
-  // Try JSON array format
+  // JSON array format
   if (trimmedSecret.startsWith('[')) {
     try {
-      const secretBytes = Uint8Array.from(JSON.parse(trimmedSecret));
-      return Keypair.fromSecretKey(secretBytes);
-    } catch (e: any) {
-      console.warn(`Failed to parse MINT_AUTHORITY_SECRET as JSON array (${e.message}). Using generated keypair fallback.`);
-      return Keypair.generate();
+      return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(trimmedSecret)));
+    } catch {
+      throw new Error('MINT_AUTHORITY_SECRET is not a valid JSON keypair');
     }
   }
 
-  // Try Base58 format
+  // Base58 format
   try {
-    const secretBytes = bs58.decode(trimmedSecret);
-    return Keypair.fromSecretKey(secretBytes);
-  } catch (e: any) {
-    console.warn(`Failed to decode MINT_AUTHORITY_SECRET from Base58 (${e.message}). Using generated keypair fallback.`);
-    return Keypair.generate();
+    return Keypair.fromSecretKey(bs58.decode(trimmedSecret));
+  } catch {
+    throw new Error('MINT_AUTHORITY_SECRET is not a valid base58 keypair');
   }
 }
-
 // In-memory cache for the official collection mint address
 let cachedCollectionMint: string | null = null;
 

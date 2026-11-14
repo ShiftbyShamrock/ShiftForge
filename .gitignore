@@ -38,3 +38,11 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Secrets / keypairs
+*.pem
+*.key
+keypair*.json
+id.json
+*-keypair.json
+.env*.local
