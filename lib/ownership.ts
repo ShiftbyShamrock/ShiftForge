@@ -64,7 +64,7 @@ export async function checkNftOwnership(wallet: string, nft: string): Promise<Ow
     try {
       const res = await fetch(dasEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://www.shiftforge.io' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 'verify-ownership', method: 'getAsset', params: { id: nft } }),
         signal: AbortSignal.timeout(STEP_TIMEOUT_MS),
       });
@@ -80,7 +80,7 @@ export async function checkNftOwnership(wallet: string, nft: string): Promise<Ow
 
   // --- Method 2: raw RPC token accounts ---
   try {
-    const connection = new Connection(rpcUrl(), 'confirmed');
+    const connection = new Connection(rpcUrl(), { commitment: 'confirmed', httpHeaders: { Origin: 'https://www.shiftforge.io' } });
     const accounts = await withTimeout(
       connection.getParsedTokenAccountsByOwner(new PublicKey(wallet), { mint: new PublicKey(nft) }),
       STEP_TIMEOUT_MS,

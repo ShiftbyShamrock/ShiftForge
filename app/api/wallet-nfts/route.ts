@@ -106,7 +106,7 @@ function redact(url: string): string {
 async function das(url: string, id: string, method: string, params: unknown): Promise<any> {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Origin: 'https://www.shiftforge.io' },
     body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
     signal: AbortSignal.timeout(HELIUS_TIMEOUT_MS),
   });

@@ -58,6 +58,7 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
     try {
       const conn = new Connection(rpcUrl, {
         commitment: 'confirmed',
+        httpHeaders: { Origin: 'https://www.shiftforge.io' },
         confirmTransactionInitialTimeout: 120000,
         fetchMiddleware: (url, options, fetch) => {
           // Retry individual RPC calls up to 3 times on transient network errors

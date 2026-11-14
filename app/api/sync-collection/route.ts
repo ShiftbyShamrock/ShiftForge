@@ -17,6 +17,7 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
     try {
       const conn = new Connection(rpcUrl, {
         commitment: 'confirmed',
+        httpHeaders: { Origin: 'https://www.shiftforge.io' },
         confirmTransactionInitialTimeout: 120000,
       });
       return await queryFn(conn);
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
 
     const dasRes = await fetch(heliusRpc, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Origin: 'https://www.shiftforge.io' },
       body: JSON.stringify({
         jsonrpc: '2.0',
         id: 'sync-collection',

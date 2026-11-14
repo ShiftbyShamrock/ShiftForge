@@ -33,7 +33,7 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
   let lastError: any = null;
   for (const rpcUrl of RPC_ENDPOINTS) {
     try {
-      const conn = new Connection(rpcUrl, 'confirmed');
+      const conn = new Connection(rpcUrl, { commitment: 'confirmed', httpHeaders: { Origin: 'https://www.shiftforge.io' } });
       return await queryFn(conn);
     } catch (err: any) {
       console.warn(`RPC call failed on ${rpcUrl}: ${err.message || err}. Trying next endpoint...`);

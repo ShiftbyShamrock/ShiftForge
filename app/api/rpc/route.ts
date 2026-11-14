@@ -106,7 +106,7 @@ export async function POST(request: Request) {
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Origin: 'https://www.shiftforge.io' },
         body: forward,
         signal: AbortSignal.timeout(20000),
       });
