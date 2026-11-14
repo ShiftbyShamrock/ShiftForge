@@ -1392,6 +1392,31 @@
       .replace(/'/g, '&#39;');
   }
 
+  // ═══════════ RPC HELPERS (same-origin proxy keeps the provider key on the server) ═══════════
+  function absRpc(u) {
+    if (!u || typeof u !== 'string') return '';
+    return /^https?:\/\//i.test(u) ? u : (location.origin + (u.charAt(0) === '/' ? u : '/' + u));
+  }
+  // Poll signature status over HTTP (no websocket needed, so it works through the proxy).
+  function confirmSig(conn, sig) {
+    var started = Date.now();
+    function poll() {
+      return conn.getSignatureStatuses([sig], { searchTransactionHistory: true }).then(function(r) {
+        var s = r && r.value && r.value[0];
+        if (s) {
+          if (s.err) throw new Error('Transaction failed on-chain');
+          if (s.confirmationStatus === 'confirmed' || s.confirmationStatus === 'finalized') return sig;
+        }
+        if (Date.now() - started > 75000) return sig; // timed out: caller still gets the signature
+        return new Promise(function(res) { setTimeout(res, 1500); }).then(poll);
+      }).catch(function(err) {
+        if (err && /failed on-chain/.test(err.message)) throw err;
+        if (Date.now() - started > 75000) return sig;
+        return new Promise(function(res) { setTimeout(res, 2000); }).then(poll);
+      });
+    }
+    return poll();
+  }
   // ═══════════ SOUND SYNTHESIZER (WEB AUDIO API) ═══════════
   var audioCtx = null;
   function getAudioContext(){
@@ -4336,7 +4361,7 @@
       var ASSOCIATED_TOKEN_PROGRAM_ID = new Web3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
       var SYSTEM_PROGRAM_ID = Web3.SystemProgram.programId;
 
-      var conn = new Web3.Connection(quote.rpcUrl || 'https://api.mainnet-beta.solana.com', 'confirmed');
+      var conn = new Web3.Connection(absRpc(quote.rpcUrl) || 'https://api.mainnet-beta.solana.com', 'confirmed');
       var mintPubkey = new Web3.PublicKey(quote.tokenMint);
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
       var walletPubkey = new Web3.PublicKey(wallet.address);
@@ -4395,7 +4420,7 @@
 
       // Check if treasury ATA exists; if not, create it
       var endpoints = [
-        quote.rpcUrl || 'https://api.mainnet-beta.solana.com',
+        absRpc(quote.rpcUrl) || 'https://api.mainnet-beta.solana.com',
         'https://api.mainnet-beta.solana.com',
         'https://solana-mainnet.g.allnodes.com'
       ];
@@ -4426,7 +4451,7 @@
           .then(function(result){
             var sig = result.signature || result;
             // Wait for confirmation using same connection
-            return conn.confirmTransaction(sig, 'confirmed')
+            return confirmSig(conn, sig)
               .then(function(){ return sig; })
               .catch(function(){ return sig; }); // Resolve sig even if confirmation times out
           })
@@ -4461,7 +4486,7 @@
       }
       var W3 = window.solanaWeb3;
 
-      var c = new W3.Connection(q.rpcUrl || 'https://api.mainnet-beta.solana.com', 'confirmed');
+      var c = new W3.Connection(absRpc(q.rpcUrl) || 'https://api.mainnet-beta.solana.com', 'confirmed');
       var tPub = new W3.PublicKey(q.treasury);
       var wPub = new W3.PublicKey(wallet.address);
       var lamports = Math.round((q.feeSol || 0.13) * 1e9);
@@ -4475,7 +4500,7 @@
       );
 
       var endpoints = [
-        q.rpcUrl || 'https://api.mainnet-beta.solana.com',
+        absRpc(q.rpcUrl) || 'https://api.mainnet-beta.solana.com',
         'https://api.mainnet-beta.solana.com',
         'https://solana-mainnet.g.allnodes.com'
       ];
@@ -4494,7 +4519,7 @@
           .then(function(txnRes){
             var sig = txnRes.signature || txnRes;
             // Wait for confirmation on-chain before returning signature to prevent server 402/500 errors
-            return c.confirmTransaction(sig, 'confirmed')
+            return confirmSig(c, sig)
               .then(function(){ return sig; })
               .catch(function(){ return sig; }); // Resolve signature even if confirmation times out
           })
@@ -4583,7 +4608,7 @@
       var transferIx = createTransferIx(fromATA, toATA, walletPubkey, amount);
 
       var endpoints = [
-        quote.rpcUrl || 'https://api.mainnet-beta.solana.com',
+        absRpc(quote.rpcUrl) || 'https://api.mainnet-beta.solana.com',
         'https://api.mainnet-beta.solana.com',
         'https://solana-mainnet.g.allnodes.com'
       ];
@@ -4612,7 +4637,7 @@
           })
           .then(function(result){
             var sig = result.signature || result;
-            return conn.confirmTransaction(sig, 'confirmed')
+            return confirmSig(conn, sig)
               .then(function(){ return sig; })
               .catch(function(){ return sig; });
           })
@@ -4701,7 +4726,7 @@
     tx.feePayer = playerPubkey; // Verify player wallet is fee payer paying rent + tx fees
 
     var endpoints = [
-      currentQuote && currentQuote.rpcUrl ? currentQuote.rpcUrl : 'https://api.mainnet-beta.solana.com',
+      absRpc(currentQuote && currentQuote.rpcUrl) || 'https://api.mainnet-beta.solana.com',
       'https://api.mainnet-beta.solana.com',
       'https://solana-mainnet.g.allnodes.com'
     ];

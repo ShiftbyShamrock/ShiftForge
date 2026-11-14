@@ -25,9 +25,9 @@ const RPC_ENDPOINTS = [
   'https://solana-mainnet.g.allnodes.com',
 ];
 
-// Public client RPC endpoint. Never derived from env vars: anything sent to the browser is public,
-// so private/keyed provider URLs must stay server-side (RPC_URL / HELIUS_API_KEY only).
-const CLIENT_RPC_URL = 'https://api.mainnet-beta.solana.com';
+// Client RPC: same-origin proxy (/api/rpc) that forwards to the private RPC server-side, so the browser
+// never sees a provider key and doesn't depend on the public RPC (which blocks browser origins).
+const CLIENT_RPC_URL = '/api/rpc';
 
 async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>): Promise<T> {
   let lastError: any = null;
