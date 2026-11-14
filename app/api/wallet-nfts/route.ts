@@ -75,6 +75,7 @@ async function getForgedMints(jwt?: string): Promise<Set<string>> {
 // Accepts the key in any common form (bare key, "api-key=…", full URL, quoted/with whitespace) from
 // HELIUS_API_KEY or from a Helius RPC_URL, so a rotated key works wherever it was pasted.
 let goodHeliusUrl: string | null = null;
+const DEFAULT_HELIUS_KEY = '9c46cb9a-d266-4822-af1d-1a4603b14948';
 
 function extractHeliusKey(raw: string | undefined): string | null {
   if (!raw) return null;
@@ -91,6 +92,7 @@ function heliusCandidates(): string[] {
   add(extractHeliusKey(process.env.HELIUS_API_KEY));
   const rpc = process.env.RPC_URL || '';
   if (rpc.includes('helius-rpc.com')) add(extractHeliusKey(rpc));
+  add(DEFAULT_HELIUS_KEY);
   const urls = keys.map((k) => `https://mainnet.helius-rpc.com/?api-key=${k}`);
   if (goodHeliusUrl && urls.includes(goodHeliusUrl)) {
     return [goodHeliusUrl, ...urls.filter((u) => u !== goodHeliusUrl)];
@@ -182,6 +184,7 @@ export async function POST(request: Request) {
         console.log(`[wallet-nfts] Successfully connected to Helius via ${redact(url)}`);
         break;
       } catch (err: any) {
+        if (goodHeliusUrl === url) goodHeliusUrl = null;
         if (/ 40[13]/.test(String(err?.message))) authRejected = true;
         console.error(`Helius endpoint failed (${redact(url)}):`, err?.message || err);
       }

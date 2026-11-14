@@ -94,10 +94,13 @@ export async function POST(request: Request) {
     }
 
     // 2. Fetch all NFTs owned by the wallet via Helius DAS getAssetsByOwner
-    const heliusApiKey = process.env.HELIUS_API_KEY;
-    const heliusRpc = heliusApiKey
-      ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
-      : (process.env.RPC_URL || 'https://api.mainnet-beta.solana.com');
+    const heliusApiKey =
+      process.env.HELIUS_API_KEY ||
+      (process.env.RPC_URL?.includes('helius-rpc.com')
+        ? process.env.RPC_URL.match(/api-key=([A-Za-z0-9-]+)/)?.[1]
+        : null) ||
+      '9c46cb9a-d266-4822-af1d-1a4603b14948';
+    const heliusRpc = `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`;
 
     const dasRes = await fetch(heliusRpc, {
       method: 'POST',

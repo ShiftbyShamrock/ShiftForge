@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/security';
 
 const ALLOWED_METHODS = new Set([
+  'getHealth',
   'getLatestBlockhash',
   'getRecentBlockhash',
   'getBalance',
@@ -32,6 +33,7 @@ const ALLOWED_METHODS = new Set([
 
 const MAX_BODY_BYTES = 64 * 1024; // signed transactions are < 2KB; keep generous headroom
 const MAX_BATCH = 10;
+const DEFAULT_HELIUS_KEY = '9c46cb9a-d266-4822-af1d-1a4603b14948';
 
 function pickKey(raw?: string): string | null {
   if (!raw) return null;
@@ -43,8 +45,11 @@ function pickKey(raw?: string): string | null {
 
 function upstreamUrls(): string[] {
   const urls: string[] = [];
-  const key = pickKey(process.env.HELIUS_API_KEY) || (process.env.RPC_URL?.includes('helius-rpc.com') ? pickKey(process.env.RPC_URL) : null);
+  const key = pickKey(process.env.HELIUS_API_KEY) || (process.env.RPC_URL?.includes('helius-rpc.com') ? pickKey(process.env.RPC_URL) : null) || DEFAULT_HELIUS_KEY;
   if (key) urls.push(`https://mainnet.helius-rpc.com/?api-key=${key}`);
+  if (DEFAULT_HELIUS_KEY && key !== DEFAULT_HELIUS_KEY) {
+    urls.push(`https://mainnet.helius-rpc.com/?api-key=${DEFAULT_HELIUS_KEY}`);
+  }
   if (process.env.RPC_URL && !process.env.RPC_URL.includes('helius-rpc.com')) urls.push(process.env.RPC_URL);
   urls.push('https://api.mainnet-beta.solana.com');
   return urls;

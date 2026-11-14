@@ -14,6 +14,8 @@ function rpcUrl(): string {
   return process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 }
 
+const DEFAULT_HELIUS_KEY = '9c46cb9a-d266-4822-af1d-1a4603b14948';
+
 /** DAS lives on the Helius endpoint. Prefer an explicit key, else reuse the RPC URL if it is Helius. */
 function dasUrl(): string | null {
   const pick = (raw?: string): string | null => {
@@ -23,7 +25,7 @@ function dasUrl(): string | null {
     if (m) v = m[1];
     return /^[A-Za-z0-9-]{8,}$/.test(v) ? v : null;
   };
-  const key = pick(process.env.HELIUS_API_KEY) || (rpcUrl().includes('helius-rpc.com') ? pick(rpcUrl()) : null);
+  const key = pick(process.env.HELIUS_API_KEY) || (rpcUrl().includes('helius-rpc.com') ? pick(rpcUrl()) : null) || DEFAULT_HELIUS_KEY;
   return key ? `https://mainnet.helius-rpc.com/?api-key=${key}` : null;
 }
 
