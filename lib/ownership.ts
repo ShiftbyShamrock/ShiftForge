@@ -8,19 +8,18 @@
 
 import { Connection, PublicKey } from '@solana/web3.js';
 
-const DEFAULT_RPC = 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe';
 const STEP_TIMEOUT_MS = 7000;
 
 function rpcUrl(): string {
-  return process.env.RPC_URL || DEFAULT_RPC;
+  return process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 }
 
 /** DAS lives on the Helius endpoint. Prefer an explicit key, else reuse the RPC URL if it is Helius. */
-function dasUrl(): string {
+function dasUrl(): string | null {
   const key = process.env.HELIUS_API_KEY;
   if (key) return `https://mainnet.helius-rpc.com/?api-key=${key}`;
   const rpc = rpcUrl();
-  return rpc.includes('helius-rpc.com') ? rpc : DEFAULT_RPC;
+  return rpc.includes('helius-rpc.com') ? rpc : null;
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
@@ -33,7 +32,8 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   });
 }
 
-export function isValidPublicKey(value: string): boolean {
+export function isValidPublicKey(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length < 32 || value.length > 44) return false;
   try {
     new PublicKey(value);
     return true;
@@ -49,21 +49,28 @@ export interface OwnershipResult {
 }
 
 export async function checkNftOwnership(wallet: string, nft: string): Promise<OwnershipResult> {
-  // --- Method 1: Helius DAS getAsset ---
-  try {
-    const res = await fetch(dasUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 'verify-ownership', method: 'getAsset', params: { id: nft } }),
-      signal: AbortSignal.timeout(STEP_TIMEOUT_MS),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const owner: string = data?.result?.ownership?.owner || '';
-      if (owner) return { owned: owner === wallet };
+  if (!isValidPublicKey(wallet) || !isValidPublicKey(nft)) {
+    return { owned: false, error: 'Invalid wallet or NFT address' };
+  }
+
+  // --- Method 1: Helius DAS getAsset (if configured) ---
+  const dasEndpoint = dasUrl();
+  if (dasEndpoint) {
+    try {
+      const res = await fetch(dasEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 'verify-ownership', method: 'getAsset', params: { id: nft } }),
+        signal: AbortSignal.timeout(STEP_TIMEOUT_MS),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const owner: string = data?.result?.ownership?.owner || '';
+        if (owner) return { owned: owner === wallet };
+      }
+    } catch (err: any) {
+      console.warn('[ownership] DAS getAsset failed:', err?.message || err);
     }
-  } catch (err: any) {
-    console.warn('[ownership] DAS getAsset failed:', err?.message || err);
   }
 
   // --- Method 2: raw RPC token accounts ---

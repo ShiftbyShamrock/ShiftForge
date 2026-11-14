@@ -1381,6 +1381,17 @@
 
 <script>
 (function() {
+  // ═══════════ SECURITY & ESCAPING ═══════════
+  function esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // ═══════════ SOUND SYNTHESIZER (WEB AUDIO API) ═══════════
   var audioCtx = null;
   function getAudioContext(){
@@ -2140,7 +2151,7 @@
     c.style.background = a.dark;
     c.style.borderColor = a.mid;
     c.title = 'Click to preview ' + name + ' abilities!';
-    c.innerHTML = '<span class="ic">'+a.icon+'</span><span class="nm" style="color:'+a.pale+'">'+name+'</span><span class="pl" style="color:'+a.light+'">'+a.playstyle+'</span>';
+    c.innerHTML = '<span class="ic">'+a.icon+'</span><span class="nm" style="color:'+a.pale+'">'+esc(name)+'</span><span class="pl" style="color:'+a.light+'">'+esc(a.playstyle)+'</span>';
     
     c.addEventListener('click', function(){
       c.classList.add('clicked');
@@ -2164,7 +2175,7 @@
     var el = $('regList');
     if(!el) return;
     el.innerHTML = COLLECTION_REGISTRY.map(function(c){
-      return '<div>• <b>' + c.name + '</b> → Class: <b>' + c.lockClass + '</b>, Affinity: <b>' + c.lockAff + '</b>' + (c.bonus ? ' · ' + c.bonus.name : '') + '</div>';
+      return '<div>• <b>' + esc(c.name) + '</b> → Class: <b>' + esc(c.lockClass) + '</b>, Affinity: <b>' + esc(c.lockAff) + '</b>' + (c.bonus ? ' · ' + esc(c.bonus.name) : '') + '</div>';
     }).join('');
   }
   renderRegistry();
@@ -2191,7 +2202,7 @@
     var b = $('collBadge');
     if(c){
       b.className = 'coll-badge show';
-      b.innerHTML = '🤝 <b>' + c.name + '</b> recognized — Class locked to <b>' + c.lockClass + '</b>, Affinity locked to <b>' + c.lockAff + '</b>' + (c.bonus ? '. Collection bonus: <b>' + c.bonus.name + '</b> — ' + c.bonus.desc : '');
+      b.innerHTML = '🤝 <b>' + esc(c.name) + '</b> recognized — Class locked to <b>' + esc(c.lockClass) + '</b>, Affinity locked to <b>' + esc(c.lockAff) + '</b>' + (c.bonus ? '. Collection bonus: <b>' + esc(c.bonus.name) + '</b> — ' + esc(c.bonus.desc) : '');
     } else {
       b.className = 'coll-badge';
     }
@@ -2332,11 +2343,16 @@
   };
 
   function cleanImageURL(url) {
-    if (!url) return '';
-    if (/permagate\.io|arweave\.net|irys\.xyz|ipfs\.io|dweb\.link|cloudflare-ipfs\.com|nftstorage\.link|\/ipfs\//i.test(url) && url.indexOf('/api/proxy-image') === -1) {
-      return '/api/proxy-image?url=' + encodeURIComponent(url);
+    if (!url || typeof url !== 'string') return '';
+    var trimmed = url.trim();
+    // Block dangerous URI schemes (javascript:, vbscript:, data:text/html)
+    if (/^(javascript|vbscript|data:(?!image\/)):/i.test(trimmed)) {
+      return '';
     }
-    return url;
+    if (/permagate\.io|arweave\.net|irys\.xyz|ipfs\.io|dweb\.link|cloudflare-ipfs\.com|nftstorage\.link|\/ipfs\//i.test(trimmed) && trimmed.indexOf('/api/proxy-image') === -1) {
+      return '/api/proxy-image?url=' + encodeURIComponent(trimmed);
+    }
+    return trimmed;
   }
 
   // Per-session cache of each wallet's NFT list: repeat loads show instantly while a fresh copy loads behind it.
@@ -2401,11 +2417,11 @@
         header.className = 'coll-header';
         var previewSrc = group.items[0] && group.items[0].image ? cleanImageURL(group.items[0].image) : '';
         header.innerHTML = 
-          (previewSrc ? '<div class="coll-preview"><img src="' + previewSrc + '" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '') +
+          (previewSrc ? '<div class="coll-preview"><img src="' + esc(previewSrc) + '" alt="" onerror="this.parentNode.style.display=\'none\'"></div>' : '') +
           '<div class="coll-info-wrap">' +
-            '<div class="coll-title">' + group.name + '</div>' +
+            '<div class="coll-title">' + esc(group.name) + '</div>' +
             '<div class="coll-count-arrow">' +
-              '<span class="coll-count">' + group.items.length + ' NFTs</span>' +
+              '<span class="coll-count">' + parseInt(group.items.length, 10) + ' NFTs</span>' +
               '<span class="coll-arrow">&#9654;</span>' +
             '</div>' +
           '</div>';
@@ -2425,8 +2441,8 @@
 
           var imgSrc = cleanImageURL(nft.image || '');
           var overlayHtml = nft.forged ? '<div class="forged-overlay">🔒 FORGED</div>' : '';
-          thumb.innerHTML = '<img src="' + imgSrc + '" alt="NFT" onerror="thumbErr(this)" referrerpolicy="no-referrer" loading="lazy">' +
-            '<div class="nft-name">' + (nft.name || nft.mint.slice(0,8) + '…') + '</div>' + overlayHtml;
+          thumb.innerHTML = '<img src="' + esc(imgSrc) + '" alt="NFT" onerror="thumbErr(this)" referrerpolicy="no-referrer" loading="lazy">' +
+            '<div class="nft-name">' + esc(nft.name || nft.mint.slice(0,8) + '…') + '</div>' + overlayHtml;
           
           if (nft.forged) {
             thumb.addEventListener('click', function(){
@@ -2517,7 +2533,7 @@
       .catch(function(err){
         if(shownSig !== null) return;                          // keep showing the cached list
         console.error('Failed to load wallet NFTs:', err);
-        grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + err.message + ' <button class="dl-btn" style="margin-left:8px" onclick="loadWalletNFTs(\'' + walletAddress + '\')">Retry</button></div>';
+        grid.innerHTML = '<div class="nft-empty">Failed to load NFTs: ' + esc(err.message || 'Network error') + ' <button class="dl-btn" style="margin-left:8px" onclick="loadWalletNFTs(\'' + esc(walletAddress) + '\')">Retry</button></div>';
       });
   }
   function selectNFT(mintAddress, thumbEl){
@@ -2679,7 +2695,7 @@
       fetch(api('/api/sync-collection'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet: wallet.address })
+        body: JSON.stringify({ wallet: wallet.address, proof: wallet.proof })
       })
       .then(function(r){ return r.json(); })
       .then(function(data){
@@ -2688,14 +2704,14 @@
           var msg = data.syncedCount > 0
             ? '✓ Grouped ' + data.syncedCount + ' cards into "SHIFT Card Game" folder!'
             : '✓ All ' + (data.totalShiftCards || '') + ' cards already organized in "SHIFT Card Game" folder!';
-          syncStatus.innerHTML = '<span style="color:#34d399">' + msg + ' Refresh wallet.</span>';
+          syncStatus.innerHTML = '<span style="color:#34d399">' + esc(msg) + ' Refresh wallet.</span>';
         } else {
-          syncStatus.innerHTML = '<span style="color:#f87171">Sync failed: ' + (data.error || 'unknown') + '</span>';
+          syncStatus.innerHTML = '<span style="color:#f87171">Sync failed: ' + esc(data.error || 'unknown') + '</span>';
         }
       })
       .catch(function(err){
         syncBtn.disabled = false;
-        syncStatus.innerHTML = '<span style="color:#f87171">Sync error: ' + (err && err.message ? err.message : err) + '</span>';
+        syncStatus.innerHTML = '<span style="color:#f87171">Sync error: ' + esc(err && err.message ? err.message : String(err)) + '</span>';
       });
     });
   }
@@ -4320,7 +4336,7 @@
       var ASSOCIATED_TOKEN_PROGRAM_ID = new Web3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
       var SYSTEM_PROGRAM_ID = Web3.SystemProgram.programId;
 
-      var conn = new Web3.Connection(quote.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe', 'confirmed');
+      var conn = new Web3.Connection(quote.rpcUrl || 'https://api.mainnet-beta.solana.com', 'confirmed');
       var mintPubkey = new Web3.PublicKey(quote.tokenMint);
       var treasuryPubkey = new Web3.PublicKey(quote.treasury);
       var walletPubkey = new Web3.PublicKey(wallet.address);
@@ -4379,7 +4395,7 @@
 
       // Check if treasury ATA exists; if not, create it
       var endpoints = [
-        quote.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+        quote.rpcUrl || 'https://api.mainnet-beta.solana.com',
         'https://api.mainnet-beta.solana.com',
         'https://solana-mainnet.g.allnodes.com'
       ];
@@ -4445,7 +4461,7 @@
       }
       var W3 = window.solanaWeb3;
 
-      var c = new W3.Connection(q.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe', 'confirmed');
+      var c = new W3.Connection(q.rpcUrl || 'https://api.mainnet-beta.solana.com', 'confirmed');
       var tPub = new W3.PublicKey(q.treasury);
       var wPub = new W3.PublicKey(wallet.address);
       var lamports = Math.round((q.feeSol || 0.13) * 1e9);
@@ -4459,7 +4475,7 @@
       );
 
       var endpoints = [
-        q.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+        q.rpcUrl || 'https://api.mainnet-beta.solana.com',
         'https://api.mainnet-beta.solana.com',
         'https://solana-mainnet.g.allnodes.com'
       ];
@@ -4567,7 +4583,7 @@
       var transferIx = createTransferIx(fromATA, toATA, walletPubkey, amount);
 
       var endpoints = [
-        quote.rpcUrl || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+        quote.rpcUrl || 'https://api.mainnet-beta.solana.com',
         'https://api.mainnet-beta.solana.com',
         'https://solana-mainnet.g.allnodes.com'
       ];
@@ -4685,7 +4701,7 @@
     tx.feePayer = playerPubkey; // Verify player wallet is fee payer paying rent + tx fees
 
     var endpoints = [
-      currentQuote && currentQuote.rpcUrl ? currentQuote.rpcUrl : 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+      currentQuote && currentQuote.rpcUrl ? currentQuote.rpcUrl : 'https://api.mainnet-beta.solana.com',
       'https://api.mainnet-beta.solana.com',
       'https://solana-mainnet.g.allnodes.com'
     ];

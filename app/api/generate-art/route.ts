@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp } from '@/lib/security';
 
 /**
  * POST /api/generate-art
@@ -7,18 +8,18 @@ import { NextResponse } from 'next/server';
  * When neither OPENAI_API_KEY nor STABILITY_API_KEY is configured,
  * returns a 503 with a fallback flag so the frontend can use the
  * original NFT artwork instead.
- *
- * Request body:
- *   { provider: 'dalle' | 'stability', prompt: string }
- *
- * Success response:
- *   Proxied JSON from the upstream provider
- *
- * Fallback response (when keys are missing):
- *   { error: string, fallback: true }  — status 503
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`generate-art:${ip}`, 10, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: 'Too many art generation requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
     const openaiKey = process.env.OPENAI_API_KEY;
     const stabilityKey = process.env.STABILITY_API_KEY;
 
@@ -32,14 +33,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const { provider, prompt } = (await request.json()) as {
-      provider: 'dalle' | 'stability';
-      prompt: string;
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const { provider, prompt } = body as {
+      provider?: string;
+      prompt?: string;
     };
 
-    if (!provider || !prompt) {
+    if (!provider || !prompt || typeof prompt !== 'string') {
       return NextResponse.json(
         { error: 'Missing required fields: provider, prompt' },
+        { status: 400 }
+      );
+    }
+
+    if (prompt.length > 1000) {
+      return NextResponse.json(
+        { error: 'Prompt exceeds 1,000 character security limit' },
         { status: 400 }
       );
     }
@@ -68,15 +81,15 @@ export async function POST(request: Request) {
             size: '1024x1024',
             response_format: 'b64_json',
           }),
+          signal: AbortSignal.timeout(30000),
         }
       );
 
       if (!openaiResponse.ok) {
-        const errorBody = await openaiResponse.text();
-        console.error('[generate-art] OpenAI API error:', errorBody);
+        console.error('[generate-art] OpenAI API error status:', openaiResponse.status);
         return NextResponse.json(
-          { error: 'OpenAI API request failed', details: errorBody },
-          { status: openaiResponse.status }
+          { error: 'OpenAI art generation failed. Please try again or use original NFT art.' },
+          { status: 502 }
         );
       }
 
@@ -110,15 +123,15 @@ export async function POST(request: Request) {
             height: 1024,
             samples: 1,
           }),
+          signal: AbortSignal.timeout(30000),
         }
       );
 
       if (!stabilityResponse.ok) {
-        const errorBody = await stabilityResponse.text();
-        console.error('[generate-art] Stability API error:', errorBody);
+        console.error('[generate-art] Stability API error status:', stabilityResponse.status);
         return NextResponse.json(
-          { error: 'Stability API request failed', details: errorBody },
-          { status: stabilityResponse.status }
+          { error: 'Stability AI art generation failed. Please try again or use original NFT art.' },
+          { status: 502 }
         );
       }
 
@@ -131,8 +144,7 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    console.error('[generate-art] Unexpected error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[generate-art] Unexpected error:', err);
+    return NextResponse.json({ error: 'Art generation service temporarily unavailable' }, { status: 500 });
   }
 }

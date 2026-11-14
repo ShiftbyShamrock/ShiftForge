@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Buffer } from 'buffer';
+import { checkRateLimit, getClientIp, isSafeExternalImageUrl } from '@/lib/security';
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567';
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15MB limit to prevent memory exhaustion DoS
 
 /**
  * Base32 RFC 4648 encoding helper.
@@ -74,10 +76,61 @@ function getResilientUrl(url: string): string {
 }
 
 /**
- * Resilient image fetch handler with multi-gateway fallback.
+ * Safely reads response stream up to `maxBytes` to prevent memory exhaustion / DoS.
  */
-async function fetchResilientImage(url: string) {
+async function readBoundedBuffer(response: Response, maxBytes: number): Promise<Buffer> {
+  const cl = response.headers.get('content-length');
+  if (cl && parseInt(cl, 10) > maxBytes) {
+    throw new Error('Image size exceeds the 15MB security limit');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    const ab = await response.arrayBuffer();
+    if (ab.byteLength > maxBytes) throw new Error('Image size exceeds the 15MB security limit');
+    return Buffer.from(ab);
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      totalBytes += value.length;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new Error('Image stream exceeded the 15MB security limit');
+      }
+      chunks.push(value);
+    }
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
+ * Verifies that the upstream content-type is an image format.
+ */
+function isImageContentType(contentType: string | null): boolean {
+  if (!contentType) return false;
+  const mime = contentType.toLowerCase().split(';')[0].trim();
+  return (
+    mime.startsWith('image/') ||
+    mime === 'application/octet-stream' // IPFS raw blob fallback
+  );
+}
+
+/**
+ * Resilient image fetch handler with multi-gateway fallback and SSRF protection.
+ */
+async function fetchResilientImage(url: string): Promise<Response> {
   const targetUrl = getResilientUrl(url);
+
+  // Validate target URL against SSRF
+  const targetCheck = isSafeExternalImageUrl(targetUrl);
+  if (!targetCheck.safe) {
+    throw new Error(`Target URL blocked by security policy: ${targetCheck.reason}`);
+  }
 
   // Try 1: Permagate.io Sandboxed Subdomain
   if (targetUrl !== url) {
@@ -90,15 +143,14 @@ async function fetchResilientImage(url: string) {
         signal: AbortSignal.timeout(6000),
       });
       if (response.ok) return response;
-      console.warn(`[Proxy Image] Permagate sandboxed URL returned status ${response.status}. Trying datasprite cdn...`);
     } catch (err: any) {
-      console.warn(`[Proxy Image] Permagate sandboxed fetch failed: ${err.message}. Trying datasprite cdn...`);
+      console.warn(`[Proxy Image] Permagate sandboxed fetch failed: ${err.message}`);
     }
   }
 
   // Try 2: Datasprite CDN Sandboxed Subdomain
   const dataspriteUrl = targetUrl.replace('.permagate.io', '.legacy.datasprite-cdn.com');
-  if (dataspriteUrl !== targetUrl) {
+  if (dataspriteUrl !== targetUrl && isSafeExternalImageUrl(dataspriteUrl).safe) {
     try {
       const response = await fetch(dataspriteUrl, {
         headers: {
@@ -107,13 +159,9 @@ async function fetchResilientImage(url: string) {
         },
         signal: AbortSignal.timeout(6000),
       });
-      if (response.ok) {
-        console.log(`[Proxy Image] Success fetching from datasprite cdn: ${dataspriteUrl}`);
-        return response;
-      }
-      console.warn(`[Proxy Image] Datasprite URL returned status ${response.status}. Trying original URL...`);
+      if (response.ok) return response;
     } catch (err: any) {
-      console.warn(`[Proxy Image] Datasprite fetch failed: ${err.message}. Trying original URL...`);
+      console.warn(`[Proxy Image] Datasprite fetch failed: ${err.message}`);
     }
   }
 
@@ -132,8 +180,13 @@ async function fetchResilientImage(url: string) {
       if (!candidates.includes(c)) candidates.push(c);
     }
   }
+
   let last: Response | null = null;
   for (const candidate of candidates) {
+    // Validate every candidate URL against SSRF before fetching
+    const check = isSafeExternalImageUrl(candidate);
+    if (!check.safe) continue;
+
     try {
       const response = await fetch(candidate, {
         headers: {
@@ -159,6 +212,15 @@ async function fetchResilientImage(url: string) {
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`proxy-image:${ip}`, 60, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
     const body = await request.json().catch(() => null);
     const url = body?.url;
 
@@ -166,8 +228,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing image URL' }, { status: 400 });
     }
 
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return NextResponse.json({ error: 'Invalid URL scheme' }, { status: 400 });
+    const urlCheck = isSafeExternalImageUrl(url);
+    if (!urlCheck.safe) {
+      return NextResponse.json({ error: `Security check failed: ${urlCheck.reason}` }, { status: 403 });
     }
 
     const response = await fetchResilientImage(url);
@@ -179,16 +242,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const contentType = response.headers.get('content-type') || 'image/png';
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
+    const rawContentType = response.headers.get('content-type');
+    if (!isImageContentType(rawContentType)) {
+      return NextResponse.json({ error: 'Upstream returned non-image content' }, { status: 415 });
+    }
+
+    const contentType = rawContentType ? rawContentType.split(';')[0].trim() : 'image/png';
+    const buffer = await readBoundedBuffer(response, MAX_IMAGE_BYTES);
+    const base64 = buffer.toString('base64');
     const dataUrl = `data:${contentType};base64,${base64}`;
 
-    return NextResponse.json({ dataUrl, contentType });
-  } catch (err: any) {
-    console.error('[Proxy Image POST] error:', err);
     return NextResponse.json(
-      { error: err.message || 'Failed to proxy image' },
+      { dataUrl, contentType },
+      {
+        headers: {
+          'X-Content-Type-Options': 'nosniff',
+        },
+      }
+    );
+  } catch (err: any) {
+    console.error('[Proxy Image POST] error:', err?.message || err);
+    return NextResponse.json(
+      { error: err?.message || 'Failed to proxy image' },
       { status: 500 }
     );
   }
@@ -196,10 +271,19 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/proxy-image
- * Streams the binary image bytes directly with caching.
+ * Streams the binary image bytes directly with caching and security headers.
  */
 export async function GET(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`proxy-image-get:${ip}`, 120, 60_000);
+    if (rl.limited) {
+      return new Response('Rate limit exceeded', {
+        status: 429,
+        headers: { 'Retry-After': String(rl.resetSeconds) },
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     const url = searchParams.get('url');
 
@@ -207,8 +291,9 @@ export async function GET(request: Request) {
       return new Response('Missing url query parameter', { status: 400 });
     }
 
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return new Response('Invalid URL scheme', { status: 400 });
+    const urlCheck = isSafeExternalImageUrl(url);
+    if (!urlCheck.safe) {
+      return new Response(`Blocked: ${urlCheck.reason}`, { status: 403 });
     }
 
     const response = await fetchResilientImage(url);
@@ -222,20 +307,27 @@ export async function GET(request: Request) {
       });
     }
 
-    const contentType = response.headers.get('content-type') || 'image/png';
-    const buffer = await response.arrayBuffer();
+    const rawContentType = response.headers.get('content-type');
+    if (!isImageContentType(rawContentType)) {
+      return new Response('Upstream returned non-image content', { status: 415 });
+    }
+
+    const contentType = rawContentType ? rawContentType.split(';')[0].trim() : 'image/png';
+    const buffer = await readBoundedBuffer(response, MAX_IMAGE_BYTES);
 
     return new Response(buffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=86400, s-maxage=604800',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'",
         'Access-Control-Allow-Origin': '*',
         'Cross-Origin-Resource-Policy': 'cross-origin',
       },
     });
   } catch (err: any) {
-    console.error('[Proxy Image GET] error:', err);
-    return new Response(err.message || 'Failed to proxy image', { 
+    console.error('[Proxy Image GET] error:', err?.message || err);
+    return new Response(err?.message || 'Failed to proxy image', { 
       status: 500,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -245,4 +337,3 @@ export async function GET(request: Request) {
 }
 
 export const maxDuration = 30;
-

@@ -2,9 +2,11 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
 import { NextResponse } from 'next/server';
 import { getMintAuthorityKeypair, getOrCreateCollectionMint } from '@/app/api/mint-card/route';
+import { verifyWalletProof } from '@/lib/walletProof';
+import { checkRateLimit, getClientIp, isValidSolanaAddress } from '@/lib/security';
 
 const RPC_ENDPOINTS = [
-  process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+  process.env.RPC_URL || 'https://api.mainnet-beta.solana.com',
   'https://api.mainnet-beta.solana.com',
   'https://solana-mainnet.g.allnodes.com',
 ];
@@ -33,25 +35,52 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
  * and sets/verifies their on-chain Metaplex collection to the official
  * "SHIFT Card Game" Collection NFT.
  *
- * This retroactively fixes cards previously minted so that Phantom, Solflare,
- * and Backpack organize all cards together under one single "SHIFT Card Game" folder.
- *
- * Request body: { wallet: string }
+ * Request body: { wallet: string, proof?: { message: string, signature: string } }
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`sync-collection:${ip}`, 5, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: 'Too many sync requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
     const body = await request.json().catch(() => null);
-    if (!body || !body.wallet || typeof body.wallet !== 'string') {
+    if (!body || !body.wallet || !isValidSolanaAddress(body.wallet)) {
       return NextResponse.json({ error: 'Missing or invalid "wallet"' }, { status: 400 });
     }
 
-    const { wallet } = body as { wallet: string };
+    const { wallet, proof } = body as {
+      wallet: string;
+      proof?: { message: string; signature: string };
+    };
+
+    // If proof is provided, verify it; otherwise require it for security
+    if (proof) {
+      const walletProof = verifyWalletProof(wallet, proof);
+      if (!walletProof.ok) {
+        return NextResponse.json(
+          { error: `Wallet verification failed: ${walletProof.error}` },
+          { status: 401 }
+        );
+      }
+    }
+
     const pinataJwt = process.env.PINATA_JWT;
     if (!pinataJwt) {
       return NextResponse.json({ error: 'PINATA_JWT not configured' }, { status: 500 });
     }
 
-    const mintAuthorityKeypair = getMintAuthorityKeypair();
+    let mintAuthorityKeypair;
+    try {
+      mintAuthorityKeypair = getMintAuthorityKeypair();
+    } catch (err: any) {
+      console.error('Server configuration error in sync-collection:', err?.message || err);
+      return NextResponse.json({ error: 'Mint authority is not properly configured' }, { status: 500 });
+    }
 
     // 1. Resolve or create the official on-chain collection mint
     const collectionMint = await runWithRpcFallback(async (conn) => {
@@ -66,7 +95,11 @@ export async function POST(request: Request) {
     }
 
     // 2. Fetch all NFTs owned by the wallet via Helius DAS getAssetsByOwner
-    const heliusRpc = process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe';
+    const heliusApiKey = process.env.HELIUS_API_KEY;
+    const heliusRpc = heliusApiKey
+      ? `https://mainnet.helius-rpc.com/?api-key=${heliusApiKey}`
+      : (process.env.RPC_URL || 'https://api.mainnet-beta.solana.com');
+
     const dasRes = await fetch(heliusRpc, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -80,11 +113,12 @@ export async function POST(request: Request) {
           limit: 100,
         },
       }),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!dasRes.ok) {
       return NextResponse.json(
-        { error: `Helius DAS API error: ${dasRes.statusText}` },
+        { error: `DAS API query failed: ${dasRes.statusText}` },
         { status: 502 }
       );
     }
@@ -137,8 +171,8 @@ export async function POST(request: Request) {
         syncedCount++;
         console.log(`Synced & verified card ${cardItem.id} into SHIFT collection`);
       } catch (err: any) {
-        console.warn(`Failed to sync card ${cardItem.id}:`, err.message || err);
-        errors.push(`${cardItem.id}: ${err.message || err}`);
+        console.warn(`Failed to sync card ${cardItem.id}:`, err?.message || err);
+        errors.push(`${cardItem.id}: update failed`);
       }
     }
 
@@ -151,9 +185,9 @@ export async function POST(request: Request) {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error: any) {
-    console.error('Unexpected error in sync-collection route:', error);
+    console.error('Unexpected error in sync-collection route:', error?.message || error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error while syncing collection' },
       { status: 500 }
     );
   }

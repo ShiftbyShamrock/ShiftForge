@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, isValidSolanaAddress } from '@/lib/security';
 
 // Fallback registry for popular verified collection names to bypass Helius DAS join lag
 const COLLECTION_NAMES: Record<string, string> = {
@@ -107,9 +108,19 @@ function fetchAssetsPage(url: string, owner: string, page: number): Promise<any[
  */
 export async function POST(request: Request) {
   try {
-    const { wallet } = await request.json();
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`wallet-nfts:${ip}`, 30, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
 
-    if (!wallet || typeof wallet !== 'string' || wallet.length < 32) {
+    const body = await request.json().catch(() => null);
+    const wallet = body?.wallet;
+
+    if (!wallet || !isValidSolanaAddress(wallet)) {
       return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 });
     }
 
@@ -219,9 +230,9 @@ export async function POST(request: Request) {
       { headers: { 'Cache-Control': 'private, no-store' } },
     );
   } catch (err: any) {
-    console.error('wallet-nfts error:', err);
+    console.error('wallet-nfts error:', err?.message || err);
     return NextResponse.json(
-      { error: err.message || 'Internal server error' },
+      { error: 'Failed to load wallet NFTs. Please try again.' },
       { status: 500 },
     );
   }

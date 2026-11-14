@@ -28,11 +28,12 @@ import { toMetaplexMetadata } from '@/adapters/nft-adapter.js';
 import { Buffer } from 'buffer';
 import { verifyWalletProof } from '@/lib/walletProof';
 import { checkNftOwnership, isValidPublicKey } from '@/lib/ownership';
+import { checkRateLimit, getClientIp, isValidSolanaAddress } from '@/lib/security';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const CULTURE_TOKEN_MINT = 'BtpQ3WZsA5rpA45iNWxQJ9djSurnXhrDYMYnyNc1LDrK';
 const RPC_ENDPOINTS = [
-  process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe',
+  process.env.RPC_URL || 'https://api.mainnet-beta.solana.com',
   'https://api.mainnet-beta.solana.com',
   'https://solana-mainnet.g.allnodes.com',
 ];
@@ -293,6 +294,15 @@ export async function getOrCreateCollectionMint(
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`mint-card:${ip}`, 10, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: 'Too many mint attempts. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
     const body = await request.json().catch(() => null);
 
     if (!body) {
@@ -307,14 +317,17 @@ export async function POST(request: Request) {
     };
 
     // --- Input validation ---
-    if (!signature || typeof signature !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid "signature"' }, { status: 400 });
+    if (!signature || typeof signature !== 'string' || signature.length < 64 || signature.length > 120) {
+      return NextResponse.json({ error: 'Missing or invalid payment signature' }, { status: 400 });
     }
-    if (!wallet || typeof wallet !== 'string') {
+    if (!wallet || !isValidSolanaAddress(wallet)) {
       return NextResponse.json({ error: 'Missing or invalid "wallet"' }, { status: 400 });
     }
     if (!card || typeof card !== 'object') {
       return NextResponse.json({ error: 'Missing or invalid "card"' }, { status: 400 });
+    }
+    if (card.imageDataUrl && typeof card.imageDataUrl === 'string' && card.imageDataUrl.length > 15 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Card image exceeds 15MB size limit' }, { status: 413 });
     }
 
     // --- Wallet verification: the player must have signed the connect-wallet message ---
@@ -339,8 +352,9 @@ export async function POST(request: Request) {
     try {
       mintAuthorityKeypair = getMintAuthorityKeypair();
     } catch (err: any) {
+      console.error('Server configuration error loading mint authority:', err?.message || err);
       return NextResponse.json(
-        { error: `Server configuration error: ${err.message}` },
+        { error: 'Server configuration error: Mint authority keypair could not be loaded.' },
         { status: 500 }
       );
     }
@@ -854,6 +868,6 @@ export async function POST(request: Request) {
       if (failedNft) mintingInProgress.delete(failedNft);
       if (body2?.signature) paymentLocks.delete(body2.signature);
     } catch { /* ignore cleanup errors */ }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to complete mint. Please try again.' }, { status: 500 });
   }
 }

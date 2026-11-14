@@ -4,31 +4,11 @@
  * Returns the mint fee quote for all payment methods (SOL, SHIFT, CULTURE SHIFT).
  * If a wallet address is provided, queries the Solana RPC for the wallet's
  * balances and calculates whether the wallet can afford each mint fee.
- *
- * Request body: { wallet?: string }
- *
- * Response: {
- *   feeShift: number,
- *   feeSol: number,
- *   feeCulture: number,
- *   configured: boolean,
- *   walletBalance: number | null,
- *   canAfford: boolean | null,
- *   walletBalanceSol: number | null,
- *   canAffordSol: boolean | null,
- *   walletBalanceCulture: number | null,
- *   canAffordCulture: boolean | null,
- *   treasury: string,
- *   tokenMint: string,
- *   cultureMint: string,
- *   decimals: number,
- *   cultureDecimals: number,
- *   rpcUrl: string
- * }
  */
 
 import { Connection, PublicKey } from '@solana/web3.js';
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, isValidSolanaAddress } from '@/lib/security';
 
 const SHIFT_TOKEN_MINT = process.env.SHIFT_TOKEN_MINT || 'GG1HVvRUMeE3behg1zrXKTT3dwinGhZeWHPJekSCqiqA';
 const CULTURE_TOKEN_MINT = 'BtpQ3WZsA5rpA45iNWxQJ9djSurnXhrDYMYnyNc1LDrK';
@@ -36,12 +16,17 @@ const SHIFT_TREASURY = process.env.SHIFT_TREASURY || 'CC5bjHvxKBmGsoSnCY6nyC24jD
 const SHIFT_MINT_FEE = 33;
 const SOL_MINT_FEE = 0.13;
 const CULTURE_MINT_FEE = 1000000;
-const RPC_URL = process.env.RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=bbece07e-3cf0-4dbd-8284-c21c328b7abe';
+
+// Server-side RPC endpoints (used privately to query balances)
+const SERVER_RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 const RPC_ENDPOINTS = [
-  RPC_URL,
+  SERVER_RPC_URL,
   'https://api.mainnet-beta.solana.com',
   'https://solana-mainnet.g.allnodes.com',
 ];
+
+// Public client RPC endpoint (never leaks server private keys)
+const CLIENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.mainnet-beta.solana.com';
 
 async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>): Promise<T> {
   let lastError: any = null;
@@ -59,8 +44,21 @@ async function runWithRpcFallback<T>(queryFn: (conn: Connection) => Promise<T>):
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`mint-quote:${ip}`, 45, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const { wallet } = body as { wallet?: string };
+
+    if (wallet && !isValidSolanaAddress(wallet)) {
+      return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 });
+    }
 
     const configured = Boolean(SHIFT_TOKEN_MINT && SHIFT_TREASURY && SHIFT_MINT_FEE);
     const shiftMintPubkey = new PublicKey(SHIFT_TOKEN_MINT);
@@ -108,39 +106,47 @@ export async function POST(request: Request) {
       try {
         const walletPubkey = new PublicKey(wallet);
 
-        // Fetch native SOL balance and token accounts for SHIFT + CULTURE using resilient RPC fallback
-        const result = await runWithRpcFallback(async (conn) => {
-          const [solBalance, shiftAccounts, cultureAccounts] = await Promise.all([
-            conn.getBalance(walletPubkey),
-            conn.getParsedTokenAccountsByOwner(walletPubkey, { mint: shiftMintPubkey }),
-            conn.getParsedTokenAccountsByOwner(walletPubkey, { mint: cultureMintPubkey }),
-          ]);
-          return { solBalance, shiftAccounts, cultureAccounts };
-        });
+        const { tokenAccounts, solLamports, cultureTokenAccounts } = await runWithRpcFallback(
+          async (conn) => {
+            const [shiftAccounts, solBalance, cultureAccounts] = await Promise.all([
+              conn.getParsedTokenAccountsByOwner(walletPubkey, { mint: shiftMintPubkey }),
+              conn.getBalance(walletPubkey),
+              conn.getParsedTokenAccountsByOwner(walletPubkey, { mint: cultureMintPubkey }),
+            ]);
+            return {
+              tokenAccounts: shiftAccounts,
+              solLamports: solBalance,
+              cultureTokenAccounts: cultureAccounts,
+            };
+          },
+        );
 
-        walletBalanceSol = result.solBalance / 1e9;
-        canAffordSol = walletBalanceSol >= SOL_MINT_FEE;
-
-        // SHIFT balance
-        walletBalance = 0;
-        for (const { account } of result.shiftAccounts.value) {
-          const parsed = account.data.parsed;
-          const amount = parsed?.info?.tokenAmount?.uiAmount ?? 0;
-          walletBalance += amount;
+        let totalBalance = 0;
+        for (const { account } of tokenAccounts.value) {
+          const parsedInfo = (account.data as any).parsed?.info;
+          const tokenAmount = parsedInfo?.tokenAmount;
+          if (tokenAmount) {
+            totalBalance += tokenAmount.uiAmount ?? 0;
+          }
         }
+        walletBalance = totalBalance;
         canAfford = walletBalance >= SHIFT_MINT_FEE;
 
-        // CULTURE SHIFT balance
-        walletBalanceCulture = 0;
-        for (const { account } of result.cultureAccounts.value) {
-          const parsed = account.data.parsed;
-          const amount = parsed?.info?.tokenAmount?.uiAmount ?? 0;
-          walletBalanceCulture += amount;
+        walletBalanceSol = solLamports / 1e9;
+        canAffordSol = walletBalanceSol >= SOL_MINT_FEE;
+
+        let totalCultureBalance = 0;
+        for (const { account } of cultureTokenAccounts.value) {
+          const parsedInfo = (account.data as any).parsed?.info;
+          const tokenAmount = parsedInfo?.tokenAmount;
+          if (tokenAmount) {
+            totalCultureBalance += tokenAmount.uiAmount ?? 0;
+          }
         }
+        walletBalanceCulture = totalCultureBalance;
         canAffordCulture = walletBalanceCulture >= CULTURE_MINT_FEE;
       } catch (err: any) {
-        console.error('Failed to parse wallet info using RPC fallback:', err);
-        // Wallet query failed — return nulls
+        console.error('Failed to parse wallet info using RPC fallback:', err?.message || err);
         walletBalance = null;
         canAfford = null;
         walletBalanceSol = null;
@@ -166,13 +172,13 @@ export async function POST(request: Request) {
       cultureMint: CULTURE_TOKEN_MINT,
       decimals,
       cultureDecimals,
-      rpcUrl: RPC_URL,
+      rpcUrl: CLIENT_RPC_URL,
       payer: 'player',
       rentPayer: 'player',
       rentFeeNote: 'Player pays Solana rent fees (payer = player)',
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Unexpected error in mint-quote route:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { checkRateLimit, getClientIp } from '@/lib/security';
 
 // Load and compile schema once
 let validateCard: any = null;
@@ -22,6 +23,20 @@ async function getValidator() {
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`validate:${ip}`, 30, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { valid: false, error: 'Too many validation requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
+    const cl = req.headers.get('content-length');
+    if (cl && parseInt(cl, 10) > 512 * 1024) {
+      return NextResponse.json({ valid: false, error: 'Payload exceeds 512KB size limit' }, { status: 413 });
+    }
+
     const body = await req.json();
     const validate = await getValidator();
     const valid = validate(body);
@@ -39,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ valid: false, errors }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json(
-      { valid: false, error: err.message || 'Invalid JSON' },
+      { valid: false, error: 'Invalid card JSON' },
       { status: 400 }
     );
   }

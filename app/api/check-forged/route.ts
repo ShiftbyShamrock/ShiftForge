@@ -3,23 +3,29 @@
  *
  * Checks if an NFT has already been forged into a SHIFT Playable card.
  * Queries Pinata for a marker pin with metadata name matching the source NFT mint.
- *
- * Request body: { nftMint: string }
- * Response: { forged: boolean }
  */
 
 import { NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, isValidSolanaAddress } from '@/lib/security';
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`check-forged:${ip}`, 60, 60_000);
+    if (rl.limited) {
+      return NextResponse.json(
+        { forged: false, error: 'Too many requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetSeconds) } }
+      );
+    }
+
     const body = await request.json().catch(() => null);
-    if (!body || !body.nftMint || typeof body.nftMint !== 'string') {
-      return NextResponse.json({ forged: false, error: 'Missing nftMint' }, { status: 400 });
+    if (!body || !body.nftMint || !isValidSolanaAddress(body.nftMint)) {
+      return NextResponse.json({ forged: false, error: 'Missing or invalid nftMint' }, { status: 400 });
     }
 
     const pinataJwt = process.env.PINATA_JWT;
     if (!pinataJwt) {
-      // If Pinata isn't configured, allow minting (can't check)
       return NextResponse.json({ forged: false });
     }
 
@@ -33,11 +39,11 @@ export async function POST(request: Request) {
       headers: {
         Authorization: `Bearer ${pinataJwt}`,
       },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {
-      console.error('Pinata pinList check failed:', res.status);
-      // On error, allow minting rather than blocking
+      console.warn('Pinata pinList check failed status:', res.status);
       return NextResponse.json({ forged: false });
     }
 
@@ -46,7 +52,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ forged });
   } catch (err: any) {
-    console.error('check-forged error:', err);
+    console.warn('check-forged error:', err?.message || err);
     return NextResponse.json({ forged: false });
   }
 }

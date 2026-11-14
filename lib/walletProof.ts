@@ -45,7 +45,7 @@ export function buildProofMessage(wallet: string, nonce: string, issuedAtIso: st
 
 /**
  * Verifies that `proof` is a fresh, valid signature by `wallet` over a well-formed message
- * that names that same wallet.
+ * that names that same wallet and domain.
  */
 export function verifyWalletProof(wallet: string, proof: WalletProof | undefined | null): ProofResult {
   try {
@@ -55,14 +55,36 @@ export function verifyWalletProof(wallet: string, proof: WalletProof | undefined
     }
     if (proof.message.length > 600) return { ok: false, error: 'Verification message too long' };
 
+    let pubkey: PublicKey;
+    try {
+      pubkey = new PublicKey(wallet);
+    } catch {
+      return { ok: false, error: 'Invalid wallet address' };
+    }
+
     const lines = proof.message.split('\n');
     if (lines[0] !== PROOF_HEADER) return { ok: false, error: 'Unrecognized verification message' };
 
     const walletLine = lines.find((l) => l.startsWith('Wallet: '));
     const issuedLine = lines.find((l) => l.startsWith('Issued: '));
+    const domainLine = lines.find((l) => l.startsWith('Domain: '));
+    const nonceLine = lines.find((l) => l.startsWith('Nonce: '));
+
     if (!walletLine || !issuedLine) return { ok: false, error: 'Malformed verification message' };
     if (walletLine.slice('Wallet: '.length).trim() !== wallet) {
       return { ok: false, error: 'Verification was signed for a different wallet' };
+    }
+
+    if (domainLine) {
+      const domain = domainLine.slice('Domain: '.length).trim().toLowerCase();
+      if (domain !== 'shiftforge.io' && domain !== 'www.shiftforge.io' && domain !== 'localhost') {
+        return { ok: false, error: 'Verification domain mismatch' };
+      }
+    }
+
+    if (nonceLine) {
+      const nonce = nonceLine.slice('Nonce: '.length).trim();
+      if (nonce.length < 4) return { ok: false, error: 'Invalid verification nonce' };
     }
 
     const issued = Date.parse(issuedLine.slice('Issued: '.length).trim());
@@ -74,7 +96,7 @@ export function verifyWalletProof(wallet: string, proof: WalletProof | undefined
     const sig = Buffer.from(proof.signature, 'base64');
     if (sig.length !== 64) return { ok: false, error: 'Invalid signature length' };
 
-    const pubkeyBytes = Buffer.from(new PublicKey(wallet).toBytes());
+    const pubkeyBytes = Buffer.from(pubkey.toBytes());
     const keyObject = createPublicKey({
       key: Buffer.concat([ED25519_SPKI_PREFIX, pubkeyBytes]),
       format: 'der',
