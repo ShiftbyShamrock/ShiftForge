@@ -71,6 +71,37 @@ async function getForgedMints(jwt?: string): Promise<Set<string>> {
   ]);
 }
 
+// ── Helius endpoint discovery ──────────────────────────────────────────────────
+// Accepts the key in any common form (bare key, "api-key=…", full URL, quoted/with whitespace) from
+// HELIUS_API_KEY or from a Helius RPC_URL, so a rotated key works wherever it was pasted.
+let goodHeliusUrl: string | null = null;
+
+function extractHeliusKey(raw: string | undefined): string | null {
+  if (!raw) return null;
+  let v = raw.trim().replace(/^["']|["']$/g, '');
+  const m = v.match(/api-key=([A-Za-z0-9-]+)/);
+  if (m) v = m[1];
+  v = v.trim();
+  return /^[A-Za-z0-9-]{8,}$/.test(v) ? v : null;
+}
+
+function heliusCandidates(): string[] {
+  const keys: string[] = [];
+  const add = (k: string | null) => { if (k && !keys.includes(k)) keys.push(k); };
+  add(extractHeliusKey(process.env.HELIUS_API_KEY));
+  const rpc = process.env.RPC_URL || '';
+  if (rpc.includes('helius-rpc.com')) add(extractHeliusKey(rpc));
+  const urls = keys.map((k) => `https://mainnet.helius-rpc.com/?api-key=${k}`);
+  if (goodHeliusUrl && urls.includes(goodHeliusUrl)) {
+    return [goodHeliusUrl, ...urls.filter((u) => u !== goodHeliusUrl)];
+  }
+  return urls;
+}
+
+function redact(url: string): string {
+  return url.replace(/api-key=([A-Za-z0-9-]{4})[A-Za-z0-9-]*/, 'api-key=$1…');
+}
+
 // ── Helius DAS ─────────────────────────────────────────────────────────────────
 async function das(url: string, id: string, method: string, params: unknown): Promise<any> {
   const res = await fetch(url, {
@@ -124,23 +155,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid wallet address' }, { status: 400 });
     }
 
-    const apiKey = process.env.HELIUS_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Helius API key not configured' }, { status: 500 });
+    const candidates = heliusCandidates();
+    if (candidates.length === 0) {
+      console.error('wallet-nfts: no Helius key configured (set HELIUS_API_KEY or a Helius RPC_URL)');
+      return NextResponse.json({ error: 'NFT service is not configured. Please try again later.' }, { status: 503 });
     }
 
-    const heliusUrl = `https://mainnet.helius-rpc.com/?api-key=${apiKey}`;
-
-    // Kick everything off together. If the input turns out to be a single NFT address, we resolve
-    // its owner and re-query below; for a normal wallet the speculative first page is the answer.
-    const resolvePromise = das(heliusUrl, 'resolve-token-mint', 'getAsset', { id: wallet }).catch(() => null);
-    const firstPagePromise: Promise<any[] | null> = fetchAssetsPage(heliusUrl, wallet, 1).catch((err) => {
-      console.error('Helius first page failed:', err);
-      return null;
-    });
+    // Kick off the forged-marker lookup right away; it runs while we find a working Helius endpoint.
     const forgedPromise = getForgedMints(process.env.PINATA_JWT);
 
-    const resolved = await resolvePromise;
+    // Find a Helius endpoint that works (remembered for later requests); skips rejected/rate-limited keys.
+    let heliusUrl = '';
+    let firstPageSpeculative: any[] | null = null;
+    let resolved: any = null;
+    for (const url of candidates) {
+      try {
+        const [r, page] = await Promise.all([
+          das(url, 'resolve-token-mint', 'getAsset', { id: wallet }).catch(() => null),
+          fetchAssetsPage(url, wallet, 1),
+        ]);
+        heliusUrl = url;
+        resolved = r;
+        firstPageSpeculative = page;
+        goodHeliusUrl = url;
+        break;
+      } catch (err: any) {
+        console.error(`Helius endpoint failed (${redact(url)}):`, err?.message || err);
+      }
+    }
+    if (!heliusUrl) {
+      return NextResponse.json(
+        { error: 'NFT service is busy. Please try again in a moment.' },
+        { status: 502 },
+      );
+    }
+
     let targetOwner: string = wallet;
     let resolvedOwner: string | null = null;
     const assetOwner: string | undefined = resolved?.result?.ownership?.owner;
@@ -150,7 +199,7 @@ export async function POST(request: Request) {
     }
 
     let firstPage = targetOwner === wallet
-      ? await firstPagePromise
+      ? firstPageSpeculative
       : await fetchAssetsPage(heliusUrl, targetOwner, 1).catch((err) => {
           console.error('Helius first page (resolved owner) failed:', err);
           return null;

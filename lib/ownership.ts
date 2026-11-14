@@ -16,10 +16,15 @@ function rpcUrl(): string {
 
 /** DAS lives on the Helius endpoint. Prefer an explicit key, else reuse the RPC URL if it is Helius. */
 function dasUrl(): string | null {
-  const key = process.env.HELIUS_API_KEY;
-  if (key) return `https://mainnet.helius-rpc.com/?api-key=${key}`;
-  const rpc = rpcUrl();
-  return rpc.includes('helius-rpc.com') ? rpc : null;
+  const pick = (raw?: string): string | null => {
+    if (!raw) return null;
+    let v = raw.trim().replace(/^["']|["']$/g, '');
+    const m = v.match(/api-key=([A-Za-z0-9-]+)/);
+    if (m) v = m[1];
+    return /^[A-Za-z0-9-]{8,}$/.test(v) ? v : null;
+  };
+  const key = pick(process.env.HELIUS_API_KEY) || (rpcUrl().includes('helius-rpc.com') ? pick(rpcUrl()) : null);
+  return key ? `https://mainnet.helius-rpc.com/?api-key=${key}` : null;
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
