@@ -179,6 +179,7 @@ export async function POST(request: Request) {
         resolved = r;
         firstPageSpeculative = page;
         goodHeliusUrl = url;
+        console.log(`[wallet-nfts] Successfully connected to Helius via ${redact(url)}`);
         break;
       } catch (err: any) {
         if (/ 40[13]/.test(String(err?.message))) authRejected = true;
