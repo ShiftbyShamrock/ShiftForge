@@ -168,6 +168,7 @@ export async function POST(request: Request) {
     let heliusUrl = '';
     let firstPageSpeculative: any[] | null = null;
     let resolved: any = null;
+    let authRejected = false;
     for (const url of candidates) {
       try {
         const [r, page] = await Promise.all([
@@ -180,12 +181,13 @@ export async function POST(request: Request) {
         goodHeliusUrl = url;
         break;
       } catch (err: any) {
+        if (/ 40[13]/.test(String(err?.message))) authRejected = true;
         console.error(`Helius endpoint failed (${redact(url)}):`, err?.message || err);
       }
     }
     if (!heliusUrl) {
       return NextResponse.json(
-        { error: 'NFT service is busy. Please try again in a moment.' },
+        { error: authRejected ? 'NFT service key was rejected by the provider (update HELIUS_API_KEY and redeploy).' : 'NFT service is busy. Please try again in a moment.', code: authRejected ? 'provider_auth' : 'provider_busy' },
         { status: 502 },
       );
     }
