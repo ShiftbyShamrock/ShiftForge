@@ -58,15 +58,13 @@ export async function POST(request: Request) {
       proof?: { message: string; signature: string };
     };
 
-    // If proof is provided, verify it; otherwise require it for security
-    if (proof) {
-      const walletProof = verifyWalletProof(wallet, proof);
-      if (!walletProof.ok) {
-        return NextResponse.json(
-          { error: `Wallet verification failed: ${walletProof.error}` },
-          { status: 401 }
-        );
-      }
+    // Wallet signature is mandatory: this route spends the server's mint authority.
+    const walletProof = verifyWalletProof(wallet, proof);
+    if (!walletProof.ok) {
+      return NextResponse.json(
+        { error: `Wallet verification failed: ${walletProof.error}` },
+        { status: 401 }
+      );
     }
 
     const pinataJwt = process.env.PINATA_JWT;

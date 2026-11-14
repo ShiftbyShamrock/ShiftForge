@@ -329,6 +329,15 @@ export async function POST(request: Request) {
     if (card.imageDataUrl && typeof card.imageDataUrl === 'string' && card.imageDataUrl.length > 15 * 1024 * 1024) {
       return NextResponse.json({ error: 'Card image exceeds 15MB size limit' }, { status: 413 });
     }
+    if (card.nftMint != null && !isValidSolanaAddress(card.nftMint)) {
+      return NextResponse.json({ error: 'Invalid source NFT address' }, { status: 400 });
+    }
+    if (card.name != null && (typeof card.name !== 'string' || card.name.length > 100)) {
+      return NextResponse.json({ error: 'Invalid card name' }, { status: 400 });
+    }
+    if (JSON.stringify({ ...card, imageDataUrl: undefined }).length > 200_000) {
+      return NextResponse.json({ error: 'Card data too large' }, { status: 413 });
+    }
 
     // --- Wallet verification: the player must have signed the connect-wallet message ---
     const walletProof = verifyWalletProof(wallet, proof);
@@ -488,6 +497,10 @@ export async function POST(request: Request) {
       }
     } catch (err: any) {
       console.warn('Payment replay check unavailable:', err?.message || err);
+      return NextResponse.json(
+        { error: 'Unable to verify payment uniqueness right now. Please retry in a moment — you have not been double-charged.' },
+        { status: 503 },
+      );
     }
     paymentLocks.set(paymentLockKey, Date.now());
 
@@ -503,7 +516,11 @@ export async function POST(request: Request) {
         );
       }
       if (own.owned === null) {
-        console.warn('Ownership lookup unavailable at mint; continuing (payment + wallet signature verified):', own.error);
+        paymentLocks.delete(paymentLockKey);
+        return NextResponse.json(
+          { error: 'Could not verify NFT ownership right now. Please retry in a moment.' },
+          { status: 503 },
+        );
       }
     }
     // --- Step 0: Server-side Duplicate Forge Check ---

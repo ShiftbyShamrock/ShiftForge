@@ -4176,7 +4176,7 @@
         updateMintQuoteUI();
       })
       .catch(function(err){ 
-        setMint('Could not load mint quote: ' + err.message, 'err'); 
+        setMint('Could not load mint quote: ' + esc(err.message), 'err'); 
         $('paymentSelectorWrap').style.display = 'none';
       });
   }
@@ -4267,7 +4267,7 @@
           if(!res) return;
           playMintSound();
           if((res.minted || res.success) && res.mintAddress){
-            setMint('✓ Minted! Card added to your "SHIFT Card Game" collectibles folder: ' + res.mintAddress, 'ok');
+            setMint('✓ Minted! Card added to your "SHIFT Card Game" collectibles folder: ' + esc(res.mintAddress), 'ok');
             // Mark this NFT as forged in the grid so it can't be minted again
             var forgedMint = selectedNftMint;
             if(forgedMint){
@@ -4293,10 +4293,10 @@
           } else if(res.pendingMint){
             setMint('✓ Payment verified. On-chain mint will finalize once the mint authority is configured.', 'ok');
           } else {
-            setMint('✓ Minted! Your playable SHIFT card NFT: ' + (res.mintAddress || res.message || 'Complete'), 'ok');
+            setMint('✓ Minted! Your playable SHIFT card NFT: ' + esc(res.mintAddress || res.message || 'Complete'), 'ok');
           }
         })
-        .catch(function(err){ setMint('Mint failed: ' + err.message, 'err'); })
+        .catch(function(err){ setMint('Mint failed: ' + esc(err.message), 'err'); })
         .then(function(){ $('mintBtn').disabled = false; });
     });
   }
